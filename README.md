@@ -10,6 +10,14 @@ Each ghost in the game has a unique behavior inspired by the original Pac-Man:
 ### Blinky (Red Ghost)
 - Directly chases Pac-Man by targeting his current position.
 - Aggressive and constantly pursues the player.
+- 
+<img width="335" height="424" alt="image" src="https://github.com/user-attachments/assets/e68007ba-cbb2-48c2-bd4a-69763511093a" />
+
+### Pinky (Pink Ghost)
+- Targets four tiles ahead of Pac-Man in the direction Pac-Man is currently moving.
+- Attempts to ambush Pac-Man by predicting his future position.
+- Moves toward this target tile, making Pinky’s behavior more strategic and tricky.
+<img width="336" height="408" alt="image" src="https://github.com/user-attachments/assets/f9554887-71a0-49b5-a77d-bb71a03b9cb4" />
 
 ### Inky (Blue Ghost)
 - Targets a position based on both Pac-Man and Blinky:
@@ -22,6 +30,7 @@ Each ghost in the game has a unique behavior inspired by the original Pac-Man:
 - Switches behavior based on distance to Pac-Man:
   - If far (distance squared ≥ 64 tiles), chases Pac-Man directly.
   - If too close, targets a fixed scatter corner to move away.
+<img width="335" height="423" alt="image" src="https://github.com/user-attachments/assets/6319da20-6ee9-4aec-92ac-b26ff0937376" />
 
 ## Ghost States
 
