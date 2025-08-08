@@ -33,4 +33,4 @@ Ghosts have several states that change their behavior:
 
 ---
 
-_Add screenshots here to show gameplay and ghost behaviors._
+<img width="561" height="645" alt="image" src="https://github.com/user-attachments/assets/a813db8f-82e7-47c4-96bc-9ef71219c70b" />
