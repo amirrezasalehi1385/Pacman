@@ -16,7 +16,7 @@ Each ghost in the game has a unique behavior inspired by the original Pac-Man:
   - Calculates a point two tiles ahead of Pac-Man in his moving direction.
   - Forms a vector from Blinky’s position to this point and doubles it.
   - Targets the resulting position, making his behavior unpredictable.
-<img width="669" height="833" alt="image" src="https://github.com/user-attachments/assets/8fa235dc-e681-487c-921b-1a9fb0414465" />
+<img width="334" height="416" alt="image" src="https://github.com/user-attachments/assets/8fa235dc-e681-487c-921b-1a9fb0414465" />
 
 ### Clyde (Orange Ghost)
 - Switches behavior based on distance to Pac-Man:
