@@ -80,6 +80,7 @@ Each ghost can be in one of several behavioral states during the game:
   - **Clyde** → Bottom-left corner  
 - Gives players a break from direct chasing.
 - Useful for creating rhythm in the gameplay.
+<img width="333" height="832" alt="image" src="https://github.com/user-attachments/assets/27a22f78-11a8-4d38-8a74-509052cddcca" />
 
 ### Chase Mode
 - Each ghost uses its **specific targeting algorithm** to hunt Pac-Man.
