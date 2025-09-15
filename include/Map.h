@@ -9,7 +9,7 @@ class TextureManager;
 class Map {
 public:
     Map(TextureManager* texManager, SDL_Renderer* rend);
-    void spawnDots(int bigDotCount);
+    void spawnDots();
     void loadLevel1();
     void generateTilesFromWalls();  // این مرحله اتومات انتخاب تکسچر
     std::vector<std::vector<int>> mapGrid;
@@ -17,6 +17,7 @@ public:
     void render();
     bool checkCollision(const SDL_Rect& hitbox) const;
     bool isWalkable(int x, int y) const;
+    static bool isInGhostHouse(int x,int y) ;
     std::vector<std::vector<int>> tileGrid;
 private:
 private:

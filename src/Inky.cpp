@@ -10,10 +10,11 @@ void Inky::update(const Pacman& pacman, const Ghost& blinky, const Map& map) {
     switch(state) {
         case WAIT:
             wait();
+            if(readyToExit) state = EXIT;
             break;
 
         case EXIT:
-            getOutOfHouse(map); // حرکت به سمت y=232 و x=224
+            getOutOfHouse(map);
             break;
 
         case CHASE: {

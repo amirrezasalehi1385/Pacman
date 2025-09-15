@@ -7,8 +7,10 @@ Clyde::Clyde(int x, int y, int w, int h)
 }
 
 void Clyde::update(const Pacman& pacman, const Map& map) {
+
     switch(state) {
         case WAIT:
+            if(readyToExit) state = EXIT;
             wait();
             break;
 

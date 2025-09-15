@@ -7,13 +7,15 @@ Pinky::Pinky(int x, int y, int w, int h)
 }
 
 void Pinky::update(const Pacman& pacman, const Map& map) {
+
     switch(state) {
         case WAIT:
-            wait(); // فقط تو خونه بالا پایین
+            wait();
+            if(readyToExit) state = EXIT;
             break;
 
         case EXIT:
-            getOutOfHouse(map); // حرکت به سمت x=224 , y=232
+            getOutOfHouse(map);
             break;
 
         case CHASE: {
@@ -25,7 +27,7 @@ void Pinky::update(const Pacman& pacman, const Map& map) {
             switch (pacman.getDirection()) {
                 case UP:
                     targetRect.y -= offset;
-                    targetRect.x -= offset; // بگ معروف Pinky
+                    targetRect.x -= offset;
                     break;
                 case DOWN:
                     targetRect.y += offset;

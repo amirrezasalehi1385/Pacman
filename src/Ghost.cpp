@@ -9,6 +9,8 @@
 
 Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0)
 {
+    canGotoGhostHouse = true;
+    readyToExit = false;
     state = WAIT;
     int pixelX = tileX * 16 + 8 - w / 2;
     int pixelY = tileY * 16 + 3*16 + 8 - h / 2;
@@ -31,10 +33,9 @@ void Ghost::wait() {
         currentDirection = UP;
     }
 
-    // حرکت طبق جهت فعلی
     switch (currentDirection) {
-        case UP:    rect.y -= speed / 2; currentTex = texUp; break;
-        case DOWN:  rect.y += speed / 2; currentTex = texDown; break;
+        case UP:    rect.y -= speed / 2; currentEye = eyeUp; break;
+        case DOWN:  rect.y += speed / 2; currentEye = eyeDown; break;
         default: break;
     }
 
@@ -48,84 +49,83 @@ void Ghost::wait() {
 
     updateHitbox();
 }
+void Ghost::updateBodyAnimation() {
+    frameCounter++;
+    if(frameCounter >= frameSpeed) {
+        bodyFrame = 1 - bodyFrame; // toggle بین دو frame
+        frameCounter = 0;
+    }
+}
+
+
 void Ghost::update(const Map& map) {
     switch (state) {
-        case WAIT:
-            wait();
-            break;
-        case EXIT:
-            getOutOfHouse(map);
-            break;
+        case WAIT: wait(); if (readyToExit) state = EXIT; break;
+        case EXIT: getOutOfHouse(map); break;
         case CHASE:
         case SCATTER:
+            canGotoGhostHouse = false;
             updateChaseScatter(map);
             break;
     }
+
+    updateBodyAnimation(); // اینجا مستقل از updateChaseScatter
 }
 
+
 void Ghost::getOutOfHouse(const Map& map) {
-    const int tileSize = 16;
-    const int exitTileX = 14;  // تایل خروج
-    const int exitTileY = 11;  // بالای ghost house
+    const int exitTileX = 14 * 16;
+    const int exitTileY = 11 * 16;
 
-    int currentTileX = (rect.x + rect.w / 2) / tileSize;
-    int currentTileY = (rect.y + rect.h / 2 - 3 * tileSize) / tileSize;
+    int currentTileX = (rect.x + rect.w / 2);
+    int currentTileY = (rect.y + rect.h / 2 - 3 * 16);
 
-    // هدف نهایی
-    SDL_Point exitTile = {exitTileX, exitTileY};
-
-    // جهت حرکت به سمت exit (اول عمودی، بعد افقی)
-    if(currentTileY > exitTileY) {
-        // قصد حرکت به بالا
-        int nextTileY = currentTileY - 1;
-        if(map.isWalkable(currentTileX, nextTileY)) {
-            rect.y -= speed;
-            currentDirection = UP;
-            currentTex = texUp;
-        } else {
-            // اگر بالایی راه نیست، سعی کن افقی حرکت کنی
-            if(currentTileX < exitTileX) {
-                int nextTileX = currentTileX + 1;
-                if(map.isWalkable(nextTileX, currentTileY)) {
-                    rect.x += speed;
-                    currentDirection = RIGHT;
-                    currentTex = texRight;
-                }
-            } else if(currentTileX > exitTileX) {
-                int nextTileX = currentTileX - 1;
-                if(map.isWalkable(nextTileX, currentTileY)) {
-                    rect.x -= speed;
-                    currentDirection = LEFT;
-                    currentTex = texLeft;
-                }
-            }
-        }
-    } else if(currentTileX < exitTileX) {
-        // حرکت به راست
-        int nextTileX = currentTileX + 1;
-        if(map.isWalkable(nextTileX, currentTileY)) {
+    if(currentTileX < exitTileX) {
+        int nextTileX = currentTileX + 16;
+        if(map.isWalkable(nextTileX/16, currentTileY/16)) {
             rect.x += speed;
             currentDirection = RIGHT;
-            currentTex = texRight;
+            currentEye = eyeRight;
         }
     } else if(currentTileX > exitTileX) {
-        // حرکت به چپ
-        int nextTileX = currentTileX - 1;
-        if(map.isWalkable(nextTileX, currentTileY)) {
+        int nextTileX = currentTileX - 16;
+        if(map.isWalkable(nextTileX/16, currentTileY/16)) {
             rect.x -= speed;
             currentDirection = LEFT;
-            currentTex = texLeft;
+            currentEye = eyeLeft;
+        }
+    }
+    else if(currentTileY > exitTileY) {
+        int nextTileY = currentTileY - 16;
+        if(map.isWalkable(currentTileX / 16, nextTileY / 16)) {
+            rect.y -= speed;
+            currentDirection = UP;
+            currentEye = eyeUp;
         }
     }
 
-    // اگر به تایل خروج رسید
-    if(currentTileX == exitTileX && currentTileY == exitTileY) {
+    if(currentTileX / 16 == exitTileX / 16 && currentTileY / 16 == exitTileY / 16) {
+        if(currentTileY > exitTileY - 8) {
+            rect.y -= speed;
+            currentDirection = UP;
+            currentEye = eyeUp;
+        }
+        if(currentTileY == exitTileY - 8) {
+            if(currentTileX < exitTileX + 8) {
+                rect.x += speed;
+                currentDirection = RIGHT;
+                currentEye = eyeRight;
+            };
+        }
         state = CHASE;
-        printf("Ghost exited house -> CHASE\n");
+        currentDirection = RIGHT;
+        currentEye = eyeRight;
     }
+
 
     updateHitbox();
 }
+
 
 
 
@@ -134,16 +134,22 @@ bool Ghost::loadTextures(TextureManager* texManager,
                          const std::string& upPath,
                          const std::string& downPath,
                          const std::string& leftPath,
-                         const std::string& rightPath)
+                         const std::string& rightPath,
+                         const std::string& bodyPath1,
+                         const std::string& bodyPath2) // اضافه شد
 {
-    texUp    = texManager->loadTexture(upPath);
-    texDown  = texManager->loadTexture(downPath);
-    texLeft  = texManager->loadTexture(leftPath);
-    texRight = texManager->loadTexture(rightPath);
+    eyeUp    = texManager->loadTexture(upPath);
+    eyeDown  = texManager->loadTexture(downPath);
+    eyeLeft  = texManager->loadTexture(leftPath);
+    eyeRight = texManager->loadTexture(rightPath);
 
-    currentTex = texDown;
-    return texUp && texDown && texLeft && texRight;
+    bodyTex1 = texManager->loadTexture(bodyPath1);
+    bodyTex2 = texManager->loadTexture(bodyPath2);
+
+    currentEye = eyeDown;
+    return eyeUp && eyeDown && eyeLeft && eyeRight && bodyTex1 && bodyTex2;
 }
+
 
 void Ghost::setTarget(const SDL_Rect& targetRect) {
     targetTile.x = (targetRect.x + targetRect.w/2) / 16;
@@ -161,26 +167,23 @@ void Ghost::updateChaseScatter(const Map& map) {
     const int mapWidthTiles = 28;
     const int mapHeightTiles = 31;
     const int tileSize = 16;
+    const int tunnelRow = 14;
+
     if (pixelsMoved == 0) {
         int rawTileX = (rect.x + 8) / tileSize;
         currentTile.x = ((rawTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
-        currentTile.y = (rect.y + 8 - 3*tileSize) / tileSize;
+        currentTile.y = (rect.y + 8 - 3 * tileSize) / tileSize;
 
         int adjustedTargetX = targetTile.x;
         int adjustedTargetY = targetTile.y;
-        const int tunnelRow = 14;
 
         bool targetInTunnel = (targetTile.y == tunnelRow) &&
                               (targetTile.x == 0 || targetTile.x == mapWidthTiles - 1);
-
         if (targetInTunnel) {
-            if (targetTile.x == 0) {
-                adjustedTargetX = mapWidthTiles - 1;
-            }
-            else if (targetTile.x == mapWidthTiles - 1) {
-                adjustedTargetX = 0;
-            }
+            adjustedTargetX = (targetTile.x == 0) ? mapWidthTiles - 1 : 0;
         }
+
+        // جهت معکوس
         Direction reverseDir;
         switch (currentDirection) {
             case UP:    reverseDir = DOWN; break;
@@ -200,23 +203,24 @@ void Ghost::updateChaseScatter(const Map& map) {
             int nx = currentTile.x + dirs[i].x;
             int ny = currentTile.y + dirs[i].y;
             Direction dir = dirMap[i];
+
+            // محدودیت مناطق خاص
             bool inNoUpZoneNextTile = ((ny == 1 || ny == 22) && (nx >= 12 && nx <= 17));
             if (dir == UP && inNoUpZoneNextTile) continue;
             if (dir == reverseDir) continue;
 
+            // بررسی Ghost House با توجه به canGoHouse
+            if (!canGotoGhostHouse && Map::isInGhostHouse(nx, ny)) continue;
+
+            // بررسی قابل حرکت بودن
             bool isValidTile = false;
             int actualNx = nx;
+
             if (ny == tunnelRow) {
-                if (nx < 0) {
-                    actualNx = mapWidthTiles - 1;
-                } else if (nx >= mapWidthTiles) {
-                    actualNx = 0;
-                } else {
-                    actualNx = nx;
-                }
-                if (ny >= 0 && ny < mapHeightTiles) {
-                    isValidTile = map.isWalkable(actualNx, ny);
-                }
+                if (nx < 0) actualNx = mapWidthTiles - 1;
+                else if (nx >= mapWidthTiles) actualNx = 0;
+
+                if (ny >= 0 && ny < mapHeightTiles) isValidTile = map.isWalkable(actualNx, ny);
             } else {
                 if (nx >= 0 && nx < mapWidthTiles && ny >= 0 && ny < mapHeightTiles) {
                     actualNx = nx;
@@ -228,12 +232,11 @@ void Ghost::updateChaseScatter(const Map& map) {
 
             int dx = actualNx - adjustedTargetX;
             int dy = ny - adjustedTargetY;
+
             if (ny == tunnelRow) {
                 int normalDist = abs(dx);
                 int wrapDist = mapWidthTiles - normalDist;
-                if (wrapDist < normalDist) {
-                    dx = (dx > 0) ? -wrapDist : wrapDist;
-                }
+                if (wrapDist < normalDist) dx = (dx > 0) ? -wrapDist : wrapDist;
             }
 
             int dist = dx * dx + dy * dy;
@@ -243,19 +246,17 @@ void Ghost::updateChaseScatter(const Map& map) {
                 bestDir = dir;
             }
         }
-        if (bestDir == STOP && reverseDir != STOP) {
-            bestDir = reverseDir;
-        }
 
+        if (bestDir == STOP && reverseDir != STOP) bestDir = reverseDir;
         currentDirection = bestDir;
     }
 
     if (currentDirection != STOP) {
         switch (currentDirection) {
-            case UP:    rect.y -= speed; currentTex = texUp; break;
-            case DOWN:  rect.y += speed; currentTex = texDown; break;
-            case LEFT:  rect.x -= speed; currentTex = texLeft; break;
-            case RIGHT: rect.x += speed; currentTex = texRight; break;
+            case UP:    rect.y -= speed; currentEye = eyeUp; break;
+            case DOWN:  rect.y += speed; currentEye = eyeDown; break;
+            case LEFT:  rect.x -= speed; currentEye = eyeLeft; break;
+            case RIGHT: rect.x += speed; currentEye = eyeRight; break;
             default: break;
         }
         pixelsMoved += speed;
@@ -266,28 +267,29 @@ void Ghost::updateChaseScatter(const Map& map) {
 
         int rawNewTileX = (rect.x + 8) / tileSize;
         int newTileX = ((rawNewTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
-        int newTileY = (rect.y + 8 - 3*tileSize) / tileSize;
+        int newTileY = (rect.y + 8 - 3 * tileSize) / tileSize;
 
         rect.x = newTileX * tileSize + 8 - rect.w / 2;
-        rect.y = newTileY * tileSize + 3*tileSize + 8 - rect.h / 2;
+        rect.y = newTileY * tileSize + 3 * tileSize + 8 - rect.h / 2;
 
         currentTile.x = newTileX;
         currentTile.y = newTileY;
     }
 
     int mapWidth = mapWidthTiles * tileSize;
-    if (rect.x + rect.w/2 < 0) {
-        rect.x = mapWidth - rect.w/2;
-    } else if (rect.x + rect.w/2 >= mapWidth) {
-        rect.x = -rect.w/2;
-    }
+    if (rect.x + rect.w/2 < 0) rect.x = mapWidth - rect.w/2;
+    else if (rect.x + rect.w/2 >= mapWidth) rect.x = -rect.w/2;
 
     updateHitbox();
 }
 
 
+
 void Ghost::render(SDL_Renderer* renderer) {
-    if(currentTex) SDL_RenderCopy(renderer, currentTex, nullptr, &rect);
+    SDL_Texture* texToRender = (bodyFrame == 0) ? bodyTex1 : bodyTex2;
+    if(texToRender) SDL_RenderCopy(renderer, texToRender, nullptr, &rect);
+    if(currentEye) SDL_RenderCopy(renderer, currentEye, nullptr, &rect);
+
     renderTarget(renderer);
 //    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 //    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 100);

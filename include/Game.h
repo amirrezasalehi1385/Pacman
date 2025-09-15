@@ -15,8 +15,7 @@ public:
     void quit();
 
 private:
-    // در Game.h
-    Uint32 gameStartTime; // زمان شروع بازی
+    Uint32 gameStartTime;
     void handleEvents();
     void update();
     void render();

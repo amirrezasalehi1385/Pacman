@@ -5,13 +5,12 @@
 Blinky::Blinky(int x, int y, int w, int h)
         : Ghost(x, y, w, h) {
     scatterCorner = {27,0};
-    state = CHASE; // مستقیم میره روی chase
+    state = CHASE;
 }
 
 void Blinky::update(const Pacman& pacman, const Map& map) {
     switch(state) {
         case WAIT:
-            // Blinky هیچوقت داخل خونه نمی‌مونه
             state = CHASE;
             break;
 

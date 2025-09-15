@@ -3,33 +3,29 @@
 #include <random>
 #include <ctime>
 
-void Map::spawnDots(int bigDotCount) {
+void Map::spawnDots() {
     std::vector<std::pair<int,int>> emptyTiles;
 
-    for (int y=0; y<mapGrid.size(); ++y) {
-        for (int x=0; x<mapGrid[y].size(); ++x) {
+    for (int y = 0; y < mapGrid.size(); ++y) {
+        for (int x = 0; x < mapGrid[y].size(); ++x) {
             if (mapGrid[y][x] == 0) {
-                if (!(y >= 11 && y <= 20 && x >= 10 && x <= 19)) {
+                if (!(y >= 9 && y <= 22 && x >= 7 && x <= 20) && !(y == 14 && (x <= 5 || x >= 22))) {
+                    tileGrid[y][x] = 21;
                     emptyTiles.emplace_back(x,y);
                 }
             }
         }
     }
 
-    std::srand(std::time(nullptr));
+    std::vector<std::pair<int,int>> bigDotPositions = {
+            {1,3}, {26,3}, {1,23}, {26,23} // مثال، جایگزین با مختصات واقعی
+    };
 
-    // اول big dot ها
-    for (int i=0; i<bigDotCount && !emptyTiles.empty(); ++i) {
-        int idx = std::rand() % emptyTiles.size();
-        auto [x,y] = emptyTiles[idx];
+    for (auto [x,y] : bigDotPositions) {
         tileGrid[y][x] = 22; // big dot
-        emptyTiles.erase(emptyTiles.begin()+idx);
-    }
-
-    for (auto [x,y] : emptyTiles) {
-        tileGrid[y][x] = 21; // small dot
     }
 }
+
 
 
 
@@ -112,7 +108,7 @@ void Map::loadLevel1() {
     };
 
     loadMap(level);
-    spawnDots(4);
+    spawnDots();
 
 
 }
@@ -152,8 +148,8 @@ void Map::loadMap(const std::vector<std::vector<int>>& mapData) {
                 else if(row==mapGrid.size()-1 && col==mapGrid[row].size()-1) texIndex=16;
                 else if(row==0) texIndex=8;
                 else if(row==mapGrid.size()-1) texIndex=6;
-                else if(col==0 && mapGrid[row][col+1] == 0) texIndex=5;
-                else if(col==mapGrid[row].size()-1 && mapGrid[row][col - 1] == 0) texIndex=7;
+                else if(col==0 && mapGrid[row][col+1] == 0 && row != 14) texIndex=5;
+                else if(col==mapGrid[row].size()-1 && mapGrid[row][col - 1] == 0 && row != 14) texIndex=7;
                 else if(col== 0 && mapGrid[row][col + 1] == 1 && mapGrid[row + 1][col + 1] == 1) texIndex = 25;
                 else if(col== 0 && mapGrid[row][col + 1] == 1 && mapGrid[row - 1][col + 1] == 1) texIndex = 28;
                 else if(col== mapGrid[row].size() - 1 && mapGrid[row][col - 1] == 1 && mapGrid[row + 1][col - 1] == 1) texIndex = 30;
@@ -187,7 +183,6 @@ void Map::loadMap(const std::vector<std::vector<int>>& mapData) {
                 }else if(row==0 && mapGrid[row + 1][col] == 1 && mapGrid[row + 1][col - 1]==1) {
                     texIndex = 24;
                 }
-                if(mapGrid[row][col] == 0) texIndex = 21;
             }else {
                 if(row ==12 && col == 10) texIndex = 18;
                 if(row == 16 && col == 10) texIndex = 19;
@@ -221,6 +216,13 @@ void Map::render() {
         }
     }
 }
+
 bool Map::isWalkable(int x, int y) const {
-    return mapGrid[y][x]==0;
+    bool walkable = (mapGrid[y][x] == 0);
+    return (walkable);
+}
+bool Map::isInGhostHouse(int x, int y) {
+    bool insideGhostHouse = (11 <= x && x <= 16 && 13 <= y && y <= 15);
+    bool ghostDoor = ((x == 13 && y == 12) || (x == 14 && y == 12));
+    return insideGhostHouse || ghostDoor;
 }

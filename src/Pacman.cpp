@@ -82,66 +82,61 @@ void Pacman::handleInput(const SDL_Event& event) {
             case SDLK_RIGHT: nextDir = RIGHT; break;
         }
     }
-}
-void Pacman::move(Map* map, int speed) {
-    // 1. تست جهت بعدی
+}void Pacman::move(Map* map, int speed) {
     SDL_Rect testHitbox = hitbox;
+    SDL_Point nextTile = getTile();
+
     switch(nextDir) {
-        case UP:    testHitbox.y -= speed; break;
-        case DOWN:  testHitbox.y += speed; break;
-        case LEFT:  testHitbox.x -= speed; break;
-        case RIGHT: testHitbox.x += speed; break;
+        case UP:    testHitbox.y -= speed; nextTile.y -= 1; break;
+        case DOWN:  testHitbox.y += speed; nextTile.y += 1; break;
+        case LEFT:  testHitbox.x -= speed; nextTile.x -= 1; break;
+        case RIGHT: testHitbox.x += speed; nextTile.x += 1; break;
         default: break;
     }
-    if(nextDir != STOP && !map->checkCollision(testHitbox)) {
+
+    if(nextDir != STOP && !map->checkCollision(testHitbox) && !Map::isInGhostHouse(nextTile.x,nextTile.y)) {
         currentDir = nextDir;
     }
 
-    // 2. تست جهت فعلی قبل از حرکت
     SDL_Rect nextHitbox = hitbox;
+    SDL_Point currNextTile = getTile();
+
     switch(currentDir) {
-        case UP:    nextHitbox.y -= speed; break;
-        case DOWN:  nextHitbox.y += speed; break;
-        case LEFT:  nextHitbox.x -= speed; break;
-        case RIGHT: nextHitbox.x += speed; break;
+        case UP:    nextHitbox.y -= speed; currNextTile.y -= 1; break;
+        case DOWN:  nextHitbox.y += speed; currNextTile.y += 1; break;
+        case LEFT:  nextHitbox.x -= speed; currNextTile.x -= 1; break;
+        case RIGHT: nextHitbox.x += speed; currNextTile.x += 1; break;
         default: break;
     }
 
-    // 3. اگه مسیر فعلی خالیه، حرکت کن
-    if(currentDir != STOP && !map->checkCollision(nextHitbox)) {
+    if(currentDir != STOP && !map->checkCollision(nextHitbox) &&
+       !Map::isInGhostHouse(currNextTile.x, currNextTile.y))
+    {
         rect.x = nextHitbox.x - (rect.w - hitbox.w)/2;
         rect.y = nextHitbox.y - (rect.h - hitbox.h)/2;
     }
+
     SDL_Point tile = getTile();
-    if (tile.y >=0 && tile.y < map->mapGrid.size() &&
-        tile.x >=0 && tile.x < map->mapGrid[0].size())
+    if(tile.y >= 0 && tile.y < map->mapGrid.size() &&
+       tile.x >= 0 && tile.x < map->mapGrid[0].size())
     {
         int &cell = map->tileGrid[tile.y][tile.x];
-
-        if (cell == 21) { // small dot
+        if(cell == 21) { // small dot
             setDotsEaten(dotsEaten + 1);
             cell = 0;
-        }
-        else if (cell == 22) { // big dot
+        } else if(cell == 22) { // big dot
             cell = 0;
-            // اینجا می‌تونی حالت power رو هم فعال کنی
         }
-
-
     }
 
-    // 4. wrap افقی
+    // wrap افقی
     int mapWidth = 28 * 16;
-    if (rect.x + rect.w < 0) {
-        rect.x = mapWidth;
-    }
-    else if (rect.x > mapWidth) {
-        rect.x = -rect.w;
-    }
+    if(rect.x + rect.w < 0) rect.x = mapWidth;
+    else if(rect.x > mapWidth) rect.x = -rect.w;
 
-    // 5. آپدیت hitbox
     updateHitbox();
 }
+
 SDL_Point Pacman::getTile() const {
     SDL_Point tile;
     tile.x = (hitbox.x + hitbox.w / 2) / 16;

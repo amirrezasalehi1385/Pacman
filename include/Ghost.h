@@ -9,12 +9,16 @@ class Map;
 
 class Ghost {
 public:
+    bool canGotoGhostHouse;
+    bool readyToExit;
     Ghost(int x, int y, int w, int h);
     bool loadTextures(TextureManager* texManager,
                       const std::string& upPath,
                       const std::string& downPath,
                       const std::string& leftPath,
-                      const std::string& rightPath);
+                      const std::string& rightPath,
+                      const std::string& bodyPath1,
+                      const std::string& bodyPath2);
     void update(const Map& map);
     void render(SDL_Renderer* renderer);
     void setPosition(int x, int y);
@@ -27,7 +31,8 @@ public:
     void clearTargetTexture();
     void getOutOfHouse(const Map& map);
     void updateChaseScatter(const Map& map);
-    GhostState state = CHASE;
+    void updateBodyAnimation();
+        GhostState state = CHASE;
     SDL_Point scatterCorner;
     void wait();
 protected:
@@ -35,17 +40,25 @@ protected:
     SDL_Point currentTile;
     Direction currentDirection = STOP;
 private:
+
     const SDL_Rect ghostHouse = {11, 16, 8, 5}; // X, Y, width, height به تایل‌ها
-    int pixelsMoved = 0; // متغیر عضو به جای static
+    int pixelsMoved = 0;
     SDL_Rect rect;
+    SDL_Rect eyeRect;
+    SDL_Texture* eyeTex;
     SDL_Rect hitbox;
     int speed = 1;
-    SDL_Texture* targetTexture; // بافت برای نشانگر هدف
-    SDL_Texture* texUp;
-    SDL_Texture* texDown;
-    SDL_Texture* texLeft;
-    SDL_Texture* texRight;
-    SDL_Texture* currentTex;
-
+    SDL_Texture* bodyTex1; // تصویر اولیه
+    SDL_Texture* bodyTex2; // تصویر پاهای باز
+    int bodyFrame = 0;     // 0 یا 1
+    SDL_Texture* targetTexture;
+    SDL_Texture* bodyTex;
+    int frameCounter = 0;    // شمارنده برای تغییر frame
+    int frameSpeed = 8;      // هر چند tick یکبار تغییر کنه
+    SDL_Texture* eyeUp;
+    SDL_Texture* eyeDown;
+    SDL_Texture* eyeLeft;
+    SDL_Texture* eyeRight;
+    SDL_Texture* currentEye;
     void updateHitbox();
 };
