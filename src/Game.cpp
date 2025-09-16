@@ -43,7 +43,10 @@ Game::~Game() {
 
 bool Game::init(const std::string& title, int w, int h) {
     gameStartTime = SDL_GetTicks();
-    if(!windowManager.init(title.c_str(), w, h)) return false;
+    modeStartTime = gameStartTime;
+    cycleStarted = true;
+    currentMode = SCATTER;
+    cycleIndex = 0;    if(!windowManager.init(title.c_str(), w, h)) return false;
     textureManager = new TextureManager(windowManager.getRenderer());
 
     backgroundTexture = textureManager->loadTexture("assets/map/background.png");
@@ -99,10 +102,9 @@ bool Game::init(const std::string& title, int w, int h) {
 void Game::render() {
     windowManager.clear();
 
-    // رندر بک‌گراند
     if (backgroundTexture) {
         SDL_Rect dst = {0, 0, 448, 576};
-        SDL_RenderCopy(windowManager.getRenderer(), backgroundTexture, nullptr, &dst);
+//        SDL_RenderCopy(windowManager.getRenderer(), backgroundTexture, nullptr, &dst);
     }
 
     gameMap->render();
@@ -135,22 +137,35 @@ void Game::run() {
             SDL_Delay(frameDelay - frameTime);
         }
     }
-}
-void Game::update() {
+}void Game::update() {
     pacman->update();
     pacman->move(gameMap, speed);
 
-    int pelletsEaten = pacman->getDotsEaten(); // تعداد توپ‌ها
+    int pelletsEaten = pacman->getDotsEaten();
 
-    // تعیین اینکه کی روح‌ها آماده خروج باشن
-    if(pelletsEaten >= 10 && !inky->readyToExit) {
-        inky->readyToExit = true;
+    if(pelletsEaten >= 10 && !inky->readyToExit) inky->readyToExit = true;
+    if(pelletsEaten >= 20 && !pinky->readyToExit) pinky->readyToExit = true;
+    if(pelletsEaten >= 30 && !clyde->readyToExit) clyde->readyToExit = true;
+
+    if(cycleStarted && cycleIndex < cycleTimes.size()) {
+        Uint32 now = SDL_GetTicks();
+        if(now - modeStartTime >= cycleTimes[cycleIndex]) {
+            currentMode = (currentMode == SCATTER) ? CHASE : SCATTER;
+            modeStartTime = now;
+            cycleIndex++;
+        }
     }
-    if(pelletsEaten >= 20 && !pinky->readyToExit) {
-        pinky->readyToExit = true;
+    if(blinky->getState() != EXIT && blinky->getState() != WAIT){
+        blinky->setMode(currentMode);
     }
-    if(pelletsEaten >= 30 && !clyde->readyToExit) {
-        clyde->readyToExit = true;
+    if(pinky->getState() != EXIT && pinky->getState() != WAIT){
+        pinky->setMode(currentMode);
+    }
+    if(inky->getState() != EXIT && inky->getState() != WAIT){
+        inky->setMode(currentMode);
+    }
+    if(clyde->getState() != EXIT && clyde->getState() != WAIT){
+        clyde->setMode(currentMode);
     }
 
     blinky->update(*pacman, *gameMap);
@@ -158,7 +173,6 @@ void Game::update() {
     pinky->update(*pacman, *gameMap);
     clyde->update(*pacman, *gameMap);
 }
-
 
 
 

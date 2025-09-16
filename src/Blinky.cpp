@@ -5,7 +5,7 @@
 Blinky::Blinky(int x, int y, int w, int h)
         : Ghost(x, y, w, h) {
     scatterCorner = {27,0};
-    state = CHASE;
+    state = SCATTER;
 }
 
 void Blinky::update(const Pacman& pacman, const Map& map) {

@@ -5,7 +5,9 @@
 #include <queue>
 #include <vector>
 #include "../include/Direction.h"
+#include "../include/GhostManager.h"
 #include <SDL2/SDL.h>
+
 
 Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0)
 {
@@ -25,6 +27,10 @@ Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0)
     printf("Ghost created at tile (%d,%d), pixel (%d,%d)\n",
            tileX, tileY, pixelX, pixelY);
 }
+void Ghost::setMode(GhostState mode) {
+    state = mode;
+}
+
 
 void Ghost::wait() {
     const int tileSize = 16;
@@ -59,17 +65,21 @@ void Ghost::updateBodyAnimation() {
 
 
 void Ghost::update(const Map& map) {
-    switch (state) {
-        case WAIT: wait(); if (readyToExit) state = EXIT; break;
-        case EXIT: getOutOfHouse(map); break;
+    switch(state) {
+        case WAIT:
+            wait();
+            if (readyToExit) state = EXIT;
+            break;
+        case EXIT:
+            getOutOfHouse(map);
+            break;
         case CHASE:
         case SCATTER:
             canGotoGhostHouse = false;
-            updateChaseScatter(map);
+            updateChaseScatter(map); // mode اینجا SCATTER یا CHASE
             break;
     }
-
-    updateBodyAnimation(); // اینجا مستقل از updateChaseScatter
+    updateBodyAnimation();
 }
 
 
@@ -117,7 +127,7 @@ void Ghost::getOutOfHouse(const Map& map) {
                 currentEye = eyeRight;
             };
         }
-        state = CHASE;
+        state = SCATTER;
         currentDirection = RIGHT;
         currentEye = eyeRight;
     }

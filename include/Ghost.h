@@ -5,6 +5,8 @@
 #include "Direction.h"
 #include "Pacman.h"
 #include "GhostState.h"
+#include "GhostManager.h"
+
 class Map;
 
 class Ghost {
@@ -26,21 +28,26 @@ public:
     SDL_Point getCurrentTile() const;
     void setTarget(const SDL_Rect& targetRect);
     void setTargetTile(int tileX, int tileY);
-        bool loadTargetTexture(SDL_Renderer* renderer, const std::string& path);
+    bool loadTargetTexture(SDL_Renderer* renderer, const std::string& path);
     void renderTarget(SDL_Renderer* renderer);
     void clearTargetTexture();
     void getOutOfHouse(const Map& map);
     void updateChaseScatter(const Map& map);
     void updateBodyAnimation();
-        GhostState state = CHASE;
+    void setState(GhostState ghostState);
+
+    GhostState state = WAIT;
     SDL_Point scatterCorner;
+    void setMode(GhostState mode);
     void wait();
+    GhostState getState() const { return state; }
+
 protected:
     SDL_Point targetTile;
     SDL_Point currentTile;
     Direction currentDirection = STOP;
-private:
 
+private:
     const SDL_Rect ghostHouse = {11, 16, 8, 5}; // X, Y, width, height به تایل‌ها
     int pixelsMoved = 0;
     SDL_Rect rect;
@@ -60,5 +67,6 @@ private:
     SDL_Texture* eyeLeft;
     SDL_Texture* eyeRight;
     SDL_Texture* currentEye;
+
     void updateHitbox();
 };

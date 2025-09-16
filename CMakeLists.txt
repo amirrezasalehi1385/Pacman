@@ -43,6 +43,8 @@ add_executable(Pacman main.cpp
         include/GhostState.h
         src/Inky.cpp
         src/Clyde.cpp
+        include/GhostManager.h
+        src/GhostManager.cpp
 )
 
 target_link_libraries(Pacman PRIVATE
