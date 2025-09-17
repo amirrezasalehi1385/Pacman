@@ -14,19 +14,17 @@ public:
     bool init(const std::string& title, int w, int h);
     void run();
     void quit();
-
 private:
-    std::vector<Uint32> cycleTimes = {20000, 20000, 7000, 20000, 5000, 20000, 5000};
+        std::vector<Uint32> cycleTimes = {15000, 20000,15000, 20000, 15000, 20000, 15000};
     GhostState currentMode = SCATTER;
     int cycleIndex = 0;
     Uint32 modeStartTime = 0;
     bool cycleStarted = false;
-
+    Uint32 frightenedUntil = 0;
     Uint32 gameStartTime;
     void handleEvents();
     void update();
     void render();
-    GhostManager ghostManager; // اضافه شد
     bool isRunning = false;
     int speed = 4;
 

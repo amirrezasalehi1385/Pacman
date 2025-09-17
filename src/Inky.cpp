@@ -57,5 +57,7 @@ void Inky::update(const Pacman& pacman, const Ghost& blinky, const Map& map) {
             setTargetTile(scatterCorner.x, scatterCorner.y);
             Ghost::update(map);
             break;
+        case FRIGHTENED :
+            Ghost::update(map);
     }
 }

@@ -9,8 +9,7 @@
 #include <SDL2/SDL.h>
 
 
-Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0)
-{
+Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0){
     canGotoGhostHouse = true;
     readyToExit = false;
     state = WAIT;
@@ -27,10 +26,6 @@ Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0)
     printf("Ghost created at tile (%d,%d), pixel (%d,%d)\n",
            tileX, tileY, pixelX, pixelY);
 }
-void Ghost::setMode(GhostState mode) {
-    state = mode;
-}
-
 
 void Ghost::wait() {
     const int tileSize = 16;
@@ -55,10 +50,11 @@ void Ghost::wait() {
 
     updateHitbox();
 }
+
 void Ghost::updateBodyAnimation() {
     frameCounter++;
     if(frameCounter >= frameSpeed) {
-        bodyFrame = 1 - bodyFrame; // toggle بین دو frame
+        bodyFrame = 1 - bodyFrame;
         frameCounter = 0;
     }
 }
@@ -76,8 +72,11 @@ void Ghost::update(const Map& map) {
         case CHASE:
         case SCATTER:
             canGotoGhostHouse = false;
-            updateChaseScatter(map); // mode اینجا SCATTER یا CHASE
+            updateChaseScatter(map);
             break;
+        case FRIGHTENED:
+            canGotoGhostHouse = false;
+            updateFrightened(map);
     }
     updateBodyAnimation();
 }
@@ -146,8 +145,8 @@ bool Ghost::loadTextures(TextureManager* texManager,
                          const std::string& leftPath,
                          const std::string& rightPath,
                          const std::string& bodyPath1,
-                         const std::string& bodyPath2) // اضافه شد
-{
+                         const std::string& bodyPath2,
+                         const std::string& frightenedPath){
     eyeUp    = texManager->loadTexture(upPath);
     eyeDown  = texManager->loadTexture(downPath);
     eyeLeft  = texManager->loadTexture(leftPath);
@@ -155,7 +154,7 @@ bool Ghost::loadTextures(TextureManager* texManager,
 
     bodyTex1 = texManager->loadTexture(bodyPath1);
     bodyTex2 = texManager->loadTexture(bodyPath2);
-
+    frightenedTex = texManager->loadTexture(frightenedPath);
     currentEye = eyeDown;
     return eyeUp && eyeDown && eyeLeft && eyeRight && bodyTex1 && bodyTex2;
 }
@@ -214,15 +213,12 @@ void Ghost::updateChaseScatter(const Map& map) {
             int ny = currentTile.y + dirs[i].y;
             Direction dir = dirMap[i];
 
-            // محدودیت مناطق خاص
             bool inNoUpZoneNextTile = ((ny == 1 || ny == 22) && (nx >= 12 && nx <= 17));
             if (dir == UP && inNoUpZoneNextTile) continue;
             if (dir == reverseDir) continue;
 
-            // بررسی Ghost House با توجه به canGoHouse
             if (!canGotoGhostHouse && Map::isInGhostHouse(nx, ny)) continue;
 
-            // بررسی قابل حرکت بودن
             bool isValidTile = false;
             int actualNx = nx;
 
@@ -293,21 +289,137 @@ void Ghost::updateChaseScatter(const Map& map) {
     updateHitbox();
 }
 
+void Ghost::updateFrightened(const Map& map) {
+    const int mapWidthTiles = 28;
+    const int mapHeightTiles = 31;
+    const int tileSize = 16;
+    const int tunnelRow = 14;
+
+    if (pixelsMoved == 0) {
+        int rawTileX = (rect.x + 8) / tileSize;
+        currentTile.x = ((rawTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
+        currentTile.y = (rect.y + 8 - 3 * tileSize) / tileSize;
+
+        // جهت معکوس (مثل متد اصلی)
+        Direction reverseDir;
+        switch (currentDirection) {
+            case UP:    reverseDir = DOWN; break;
+            case DOWN:  reverseDir = UP; break;
+            case LEFT:  reverseDir = RIGHT; break;
+            case RIGHT: reverseDir = LEFT; break;
+            default:    reverseDir = STOP; break;
+        }
+
+        std::vector<Direction> possibleDirs;
+        const SDL_Point dirs[4] = { {0,-1}, {-1,0}, {0,1}, {1,0} };
+        Direction dirMap[4] = { UP, LEFT, DOWN, RIGHT };
+
+        for (int i = 0; i < 4; i++) {
+            Direction dir = dirMap[i];
+            int nx = currentTile.x + dirs[i].x;
+            int ny = currentTile.y + dirs[i].y;
+
+            // جلوگیری از معکوس شدن
+            if (dir == reverseDir) continue;
+
+            // قانون no-up zone (مثل متد اصلی)
+            bool inNoUpZoneNextTile = ((ny == 1 || ny == 22) && (nx >= 12 && nx <= 17));
+            if (dir == UP && inNoUpZoneNextTile) continue;
+            if (!canGotoGhostHouse && Map::isInGhostHouse(nx, ny)) continue;
+
+            // بررسی تونل و مرزها
+            bool isValidTile = false;
+            int actualNx = nx;
+
+            if (ny == tunnelRow) {
+                // مدیریت تونل افقی
+                if (nx < 0) actualNx = mapWidthTiles - 1;
+                else if (nx >= mapWidthTiles) actualNx = 0;
+
+                if (ny >= 0 && ny < mapHeightTiles) {
+                    isValidTile = map.isWalkable(actualNx, ny);
+                }
+            } else {
+                // حرکت عادی
+                if (nx >= 0 && nx < mapWidthTiles && ny >= 0 && ny < mapHeightTiles) {
+                    actualNx = nx;
+                    isValidTile = map.isWalkable(actualNx, ny);
+                }
+            }
+
+            if (isValidTile) {
+                possibleDirs.push_back(dir);
+            }
+        }
+
+        // انتخاب تصادفی از جهات ممکن
+        if (!possibleDirs.empty()) {
+            int idx = rand() % possibleDirs.size();
+            currentDirection = possibleDirs[idx];
+        } else if (reverseDir != STOP) {
+            // اگه هیچ راهی نبود، معکوس شو
+            currentDirection = reverseDir;
+        }
+    }
+
+    // حرکت
+    if (currentDirection != STOP) {
+        switch (currentDirection) {
+            case UP:    rect.y -= speed; currentEye = eyeUp; break;
+            case DOWN:  rect.y += speed; currentEye = eyeDown; break;
+            case LEFT:  rect.x -= speed; currentEye = eyeLeft; break;
+            case RIGHT: rect.x += speed; currentEye = eyeRight; break;
+            default: break;
+        }
+        pixelsMoved += speed;
+    }
+
+    // کامل شدن حرکت به کاشی بعدی
+    if (pixelsMoved >= tileSize) {
+        pixelsMoved = 0;
+
+        // محاسبه موقعیت جدید (درست کردن currentTile)
+        int rawNewTileX = (rect.x + 8) / tileSize;
+        int newTileX = ((rawNewTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
+        int newTileY = (rect.y + 8 - 3 * tileSize) / tileSize;
+
+        // تنظیم دقیق موقعیت
+        rect.x = newTileX * tileSize + 8 - rect.w / 2;
+        rect.y = newTileY * tileSize + 3 * tileSize + 8 - rect.h / 2;
+
+        // آپدیت currentTile
+        currentTile.x = newTileX;
+        currentTile.y = newTileY;
+    }
+
+    // مدیریت تونل افقی برای موقعیت نمایش
+    int mapWidth = mapWidthTiles * tileSize;
+    if (rect.x + rect.w/2 < 0) {
+        rect.x = mapWidth - rect.w/2;
+    } else if (rect.x + rect.w/2 >= mapWidth) {
+        rect.x = -rect.w/2;
+    }
+
+    updateHitbox();
+}
 
 
 void Ghost::render(SDL_Renderer* renderer) {
     SDL_Texture* texToRender = (bodyFrame == 0) ? bodyTex1 : bodyTex2;
-    if(texToRender) SDL_RenderCopy(renderer, texToRender, nullptr, &rect);
-    if(currentEye) SDL_RenderCopy(renderer, currentEye, nullptr, &rect);
-
+    if(getState() != FRIGHTENED) {
+        if(texToRender) SDL_RenderCopy(renderer, texToRender, nullptr, &rect);
+        if(currentEye) SDL_RenderCopy(renderer, currentEye, nullptr, &rect);
+    }
+    if(getState() == FRIGHTENED) {
+        if(frightenedTex) SDL_RenderCopy(renderer,frightenedTex, nullptr, &rect);
+    }
     renderTarget(renderer);
 //    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 //    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 100);
 //    SDL_RenderFillRect(renderer, &hitbox);
 }
 
-void Ghost::updateHitbox()
-{
+void Ghost::updateHitbox(){
     int hbSize = 16;
     hitbox.w = hbSize;
     hitbox.h = hbSize;
@@ -369,3 +481,10 @@ void Ghost::clearTargetTexture() {
 SDL_Point Ghost::getCurrentTile() const {
     return currentTile;
 }
+
+void Ghost::setState(GhostState mode) {
+    state = mode;
+};
+void Ghost::setMode(GhostState mode) {
+    state = mode;
+};

@@ -18,11 +18,11 @@ void Map::spawnDots() {
     }
 
     std::vector<std::pair<int,int>> bigDotPositions = {
-            {1,3}, {26,3}, {1,23}, {26,23} // مثال، جایگزین با مختصات واقعی
+            {1,3}, {26,3}, {1,23}, {26,23}
     };
 
     for (auto [x,y] : bigDotPositions) {
-        tileGrid[y][x] = 22; // big dot
+        tileGrid[y][x] = 22;
     }
 }
 

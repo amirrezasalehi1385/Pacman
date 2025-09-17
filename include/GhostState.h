@@ -4,5 +4,6 @@ enum GhostState {
     WAIT,
     EXIT,
     CHASE,
-    SCATTER
+    SCATTER,
+    FRIGHTENED
 };

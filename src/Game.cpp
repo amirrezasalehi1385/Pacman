@@ -64,7 +64,8 @@ bool Game::init(const std::string& title, int w, int h) {
                          "assets/ghost/eyeLeft.png",
                          "assets/ghost/eyeRight.png",
                          "assets/ghost/Blinky.png",
-                         "assets/ghost/Blinky2.png");
+                         "assets/ghost/Blinky2.png",
+                         "assets/ghost/frightened.png");
 //    blinky->loadTargetTexture(windowManager.getRenderer(), "assets/blinky_target.png");
 
     pinky = new Pinky(14, 14, 28, 28);
@@ -74,7 +75,8 @@ bool Game::init(const std::string& title, int w, int h) {
                         "assets/ghost/eyeLeft.png",
                         "assets/ghost/eyeRight.png",
                         "assets/ghost/Pinky.png",
-                        "assets/ghost/Pinky2.png");
+                        "assets/ghost/Pinky2.png",
+                        "assets/ghost/frightened.png");
 //    pinky->loadTargetTexture(windowManager.getRenderer(), "assets/pinky_target.png");
 
     inky = new Inky(12,14,28,28);
@@ -84,7 +86,8 @@ bool Game::init(const std::string& title, int w, int h) {
                        "assets/ghost/eyeLeft.png",
                        "assets/ghost/eyeRight.png",
                        "assets/ghost/Inky.png",
-                       "assets/ghost/Inky2.png");
+                       "assets/ghost/Inky2.png",
+                       "assets/ghost/frightened.png");
 //    inky->loadTargetTexture(windowManager.getRenderer(), "assets/inky_target.png");
     clyde = new Clyde(16,14,28,28);
     clyde->loadTextures(textureManager,
@@ -93,7 +96,8 @@ bool Game::init(const std::string& title, int w, int h) {
                         "assets/ghost/eyeLeft.png",
                         "assets/ghost/eyeRight.png",
                         "assets/ghost/Clyde.png",
-                        "assets/ghost/Clyde2.png");
+                        "assets/ghost/Clyde2.png",
+                        "assets/ghost/frightened.png");
 //    clyde->loadTargetTexture(windowManager.getRenderer(), "assets/clyde_target.png");
 
     isRunning = true;
@@ -137,34 +141,58 @@ void Game::run() {
             SDL_Delay(frameDelay - frameTime);
         }
     }
-}void Game::update() {
+}
+
+void Game::update() {
     pacman->update();
     pacman->move(gameMap, speed);
 
-    int pelletsEaten = pacman->getDotsEaten();
+    Uint32 now = SDL_GetTicks();
 
+    if (pacman->ateBigDot) {
+        pacman->ateBigDot = false;
+        frightenedUntil = now + 6000;
+
+        blinky->setState(FRIGHTENED);
+        pinky->setState(FRIGHTENED);
+        inky->setState(FRIGHTENED);
+        clyde->setState(FRIGHTENED);
+    }
+
+    // وقتی زمان frightened تموم شد، حالت ghost ها برمی‌گرده به currentMode
+    if (frightenedUntil != 0 && now > frightenedUntil) {
+        frightenedUntil = 0;
+
+        if(blinky->getState() == FRIGHTENED) blinky->setMode(currentMode);
+        if(pinky->getState() == FRIGHTENED) pinky->setMode(currentMode);
+        if(inky->getState() == FRIGHTENED) inky->setMode(currentMode);
+        if(clyde->getState() == FRIGHTENED) clyde->setMode(currentMode);
+    }
+
+    int pelletsEaten = pacman->getDotsEaten();
     if(pelletsEaten >= 10 && !inky->readyToExit) inky->readyToExit = true;
     if(pelletsEaten >= 20 && !pinky->readyToExit) pinky->readyToExit = true;
     if(pelletsEaten >= 30 && !clyde->readyToExit) clyde->readyToExit = true;
 
     if(cycleStarted && cycleIndex < cycleTimes.size()) {
-        Uint32 now = SDL_GetTicks();
         if(now - modeStartTime >= cycleTimes[cycleIndex]) {
             currentMode = (currentMode == SCATTER) ? CHASE : SCATTER;
             modeStartTime = now;
             cycleIndex++;
         }
     }
-    if(blinky->getState() != EXIT && blinky->getState() != WAIT){
+
+    // فقط وقتی حالت FRIGHTENED نیستن، mode بگیرن
+    if(blinky->getState() != EXIT && blinky->getState() != WAIT && blinky->getState() != FRIGHTENED){
         blinky->setMode(currentMode);
     }
-    if(pinky->getState() != EXIT && pinky->getState() != WAIT){
+    if(pinky->getState() != EXIT && pinky->getState() != WAIT && pinky->getState() != FRIGHTENED){
         pinky->setMode(currentMode);
     }
-    if(inky->getState() != EXIT && inky->getState() != WAIT){
+    if(inky->getState() != EXIT && inky->getState() != WAIT && inky->getState() != FRIGHTENED){
         inky->setMode(currentMode);
     }
-    if(clyde->getState() != EXIT && clyde->getState() != WAIT){
+    if(clyde->getState() != EXIT && clyde->getState() != WAIT && clyde->getState() != FRIGHTENED){
         clyde->setMode(currentMode);
     }
 
@@ -173,7 +201,6 @@ void Game::run() {
     pinky->update(*pacman, *gameMap);
     clyde->update(*pacman, *gameMap);
 }
-
 
 
 

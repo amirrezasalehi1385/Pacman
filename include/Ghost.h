@@ -8,19 +8,21 @@
 #include "GhostManager.h"
 
 class Map;
-
 class Ghost {
 public:
     bool canGotoGhostHouse;
     bool readyToExit;
     Ghost(int x, int y, int w, int h);
+
     bool loadTextures(TextureManager* texManager,
                       const std::string& upPath,
                       const std::string& downPath,
                       const std::string& leftPath,
                       const std::string& rightPath,
                       const std::string& bodyPath1,
-                      const std::string& bodyPath2);
+                      const std::string& bodyPath2,
+                      const std::string& frightenedPath);
+
     void update(const Map& map);
     void render(SDL_Renderer* renderer);
     void setPosition(int x, int y);
@@ -35,10 +37,8 @@ public:
     void updateChaseScatter(const Map& map);
     void updateBodyAnimation();
     void setState(GhostState ghostState);
-
-    GhostState state = WAIT;
-    SDL_Point scatterCorner;
     void setMode(GhostState mode);
+    void updateFrightened(const Map& map);
     void wait();
     GhostState getState() const { return state; }
 
@@ -46,6 +46,8 @@ protected:
     SDL_Point targetTile;
     SDL_Point currentTile;
     Direction currentDirection = STOP;
+    SDL_Point scatterCorner;
+    GhostState state = WAIT;
 
 private:
     const SDL_Rect ghostHouse = {11, 16, 8, 5}; // X, Y, width, height به تایل‌ها
@@ -55,13 +57,14 @@ private:
     SDL_Texture* eyeTex;
     SDL_Rect hitbox;
     int speed = 1;
-    SDL_Texture* bodyTex1; // تصویر اولیه
-    SDL_Texture* bodyTex2; // تصویر پاهای باز
-    int bodyFrame = 0;     // 0 یا 1
+    SDL_Texture* bodyTex1;
+    SDL_Texture* bodyTex2;
+    SDL_Texture* frightenedTex;
+    int bodyFrame = 0;
     SDL_Texture* targetTexture;
     SDL_Texture* bodyTex;
-    int frameCounter = 0;    // شمارنده برای تغییر frame
-    int frameSpeed = 8;      // هر چند tick یکبار تغییر کنه
+    int frameCounter = 0;
+    int frameSpeed = 8;
     SDL_Texture* eyeUp;
     SDL_Texture* eyeDown;
     SDL_Texture* eyeLeft;

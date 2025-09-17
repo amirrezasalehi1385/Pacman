@@ -61,7 +61,12 @@ void Pacman::setPosition(int x, int y) {
     rect.y = y;
     updateHitbox();
 }
-
+int Pacman::getBigDotsEaten() const{
+    return bigDotsEaten;
+};
+void Pacman::setBigDotsEaten(int x){
+    bigDotsEaten = x;
+}
 void Pacman::updateHitbox() {
     int hbSize = 14;
     hitbox.w = hbSize;
@@ -70,8 +75,6 @@ void Pacman::updateHitbox() {
     hitbox.y = rect.y + (rect.h - hbSize) / 2;
 
 }
-
-#include "../include/Map.h"
 
 void Pacman::handleInput(const SDL_Event& event) {
     if(event.type == SDL_KEYDOWN) {
@@ -121,11 +124,13 @@ void Pacman::handleInput(const SDL_Event& event) {
        tile.x >= 0 && tile.x < map->mapGrid[0].size())
     {
         int &cell = map->tileGrid[tile.y][tile.x];
-        if(cell == 21) { // small dot
+        if(cell == 21) {
             setDotsEaten(dotsEaten + 1);
             cell = 0;
-        } else if(cell == 22) { // big dot
+        } else if(cell == 22) {
+            setBigDotsEaten(dotsEaten + 1);
             cell = 0;
+            ateBigDot = true;
         }
     }
 
