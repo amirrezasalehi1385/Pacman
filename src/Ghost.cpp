@@ -12,6 +12,7 @@
 Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0){
     canGotoGhostHouse = true;
     readyToExit = false;
+    ghostEaten = false;
     state = WAIT;
     int pixelX = tileX * 16 + 8 - w / 2;
     int pixelY = tileY * 16 + 3*16 + 8 - h / 2;
@@ -26,6 +27,20 @@ Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0){
     printf("Ghost created at tile (%d,%d), pixel (%d,%d)\n",
            tileX, tileY, pixelX, pixelY);
 }
+
+bool Ghost::checkCollisionWithPacman(Pacman* pacman) {
+    SDL_Rect pacHitbox = pacman->getHitbox(); // کپی hitbox
+    if(SDL_HasIntersection(&hitbox, &pacHitbox)) {
+        if(state == FRIGHTENED) {
+            ghostEaten = true;
+            state = EATEN;
+        }
+        return true;
+    }
+    return false;
+
+}
+
 
 void Ghost::wait() {
     const int tileSize = 16;
@@ -77,60 +92,102 @@ void Ghost::update(const Map& map) {
         case FRIGHTENED:
             canGotoGhostHouse = false;
             updateFrightened(map);
+            break;
+        case EATEN:
+            canGotoGhostHouse = true;
+            updateChaseScatter(map);
     }
     updateBodyAnimation();
 }
 
 
 void Ghost::getOutOfHouse(const Map& map) {
-    const int exitTileX = 14 * 16;
-    const int exitTileY = 11 * 16;
+    const int tileSize = 16;
+    const int mapWidthTiles = 28;
+    const int mapHeightTiles = 31;
+    const int exitTileX = 14;
+    const int exitTileY = 11;
+    const int offsetX = -8; // شیفت 8 پیکسل به چپ
 
-    int currentTileX = (rect.x + rect.w / 2);
-    int currentTileY = (rect.y + rect.h / 2 - 3 * 16);
+    if (pixelsMoved == 0) {
+        int rawTileX = (rect.x + 8 - offsetX) / tileSize; // توجه: برای collision، offset برگردونده شد
+        currentTile.x = ((rawTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
+        currentTile.y = (rect.y + 8 - 3 * tileSize) / tileSize;
 
-    if(currentTileX < exitTileX) {
-        int nextTileX = currentTileX + 16;
-        if(map.isWalkable(nextTileX/16, currentTileY/16)) {
-            rect.x += speed;
-            currentDirection = RIGHT;
-            currentEye = eyeRight;
-        }
-    } else if(currentTileX > exitTileX) {
-        int nextTileX = currentTileX - 16;
-        if(map.isWalkable(nextTileX/16, currentTileY/16)) {
-            rect.x -= speed;
+        Direction nextDir = STOP;
+
+        if (currentTile.x < exitTileX) nextDir = RIGHT;
+        else if (currentTile.x > exitTileX) nextDir = LEFT;
+        else if (currentTile.y > exitTileY) nextDir = UP;
+        else if (currentTile.y == exitTileY) {
+            printf("Ghost exited house at tile (%d,%d)\n", currentTile.x, currentTile.y);
+            state = SCATTER;
+            pixelsMoved = 0;
             currentDirection = LEFT;
             currentEye = eyeLeft;
+            return;
         }
-    }
-    else if(currentTileY > exitTileY) {
-        int nextTileY = currentTileY - 16;
-        if(map.isWalkable(currentTileX / 16, nextTileY / 16)) {
-            rect.y -= speed;
-            currentDirection = UP;
-            currentEye = eyeUp;
+
+        if (nextDir != STOP) {
+            const SDL_Point dirs[4] = { {0,-1}, {-1,0}, {0,1}, {1,0} };
+            Direction dirMap[4] = { UP, LEFT, DOWN, RIGHT };
+
+            for (int i = 0; i < 4; i++) {
+                if (dirMap[i] == nextDir) {
+                    int nx = currentTile.x + dirs[i].x;
+                    int ny = currentTile.y + dirs[i].y;
+
+                    if (nx >= 0 && nx < mapWidthTiles && ny >= 0 && ny < mapHeightTiles) {
+                        if (map.isWalkable(nx, ny) || Map::isInGhostHouse(nx, ny)) {
+                            currentDirection = nextDir;
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 
-    if(currentTileX / 16 == exitTileX / 16 && currentTileY / 16 == exitTileY / 16) {
-        if(currentTileY > exitTileY - 8) {
-            rect.y -= speed;
-            currentDirection = UP;
-            currentEye = eyeUp;
-        }
-        if(currentTileY == exitTileY - 8) {
-            if(currentTileX < exitTileX + 8) {
+    // حرکت واقعی با شیفت offset
+    if (currentDirection != STOP) {
+        switch (currentDirection) {
+            case UP:
+                rect.y -= speed;
+                currentEye = eyeUp;
+                break;
+            case DOWN:
+                rect.y += speed;
+                currentEye = eyeDown;
+                break;
+            case LEFT:
+                rect.x -= speed;
+                currentEye = eyeLeft;
+                break;
+            case RIGHT:
                 rect.x += speed;
-                currentDirection = RIGHT;
                 currentEye = eyeRight;
-            };
+                break;
+            default:
+                break;
         }
-        state = SCATTER;
-        currentDirection = RIGHT;
-        currentEye = eyeRight;
+        pixelsMoved += speed;
     }
 
+    if (pixelsMoved >= tileSize) {
+        pixelsMoved = 0;
+
+        int rawNewTileX = (rect.x + 8 - offsetX) / tileSize; // برای collision
+        int newTileX = ((rawNewTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
+        int newTileY = (rect.y + 8 - 3 * tileSize) / tileSize;
+
+        rect.x = newTileX * tileSize + 8 - rect.w / 2 + offsetX; // اعمال offset به پوزیشن واقعی
+        rect.y = newTileY * tileSize + 3 * tileSize + 8 - rect.h / 2;
+
+        currentTile.x = newTileX;
+        currentTile.y = newTileY;
+
+        printf("Ghost moved to tile (%d,%d)\n", currentTile.x, currentTile.y);
+    }
 
     updateHitbox();
 }
@@ -138,26 +195,22 @@ void Ghost::getOutOfHouse(const Map& map) {
 
 
 
+bool Ghost::loadTextures(TextureManager* texManager, const std::vector<std::string>& paths) {
+    if(paths.size() < 7) return false; // حداقل 7 تکسچر نیاز داریم
 
-bool Ghost::loadTextures(TextureManager* texManager,
-                         const std::string& upPath,
-                         const std::string& downPath,
-                         const std::string& leftPath,
-                         const std::string& rightPath,
-                         const std::string& bodyPath1,
-                         const std::string& bodyPath2,
-                         const std::string& frightenedPath){
-    eyeUp    = texManager->loadTexture(upPath);
-    eyeDown  = texManager->loadTexture(downPath);
-    eyeLeft  = texManager->loadTexture(leftPath);
-    eyeRight = texManager->loadTexture(rightPath);
+    eyeUp    = texManager->loadTexture(paths[0]);
+    eyeDown  = texManager->loadTexture(paths[1]);
+    eyeLeft  = texManager->loadTexture(paths[2]);
+    eyeRight = texManager->loadTexture(paths[3]);
+    bodyTex1 = texManager->loadTexture(paths[4]);
+    bodyTex2 = texManager->loadTexture(paths[5]);
+    frightenedTex = texManager->loadTexture(paths[6]);
 
-    bodyTex1 = texManager->loadTexture(bodyPath1);
-    bodyTex2 = texManager->loadTexture(bodyPath2);
-    frightenedTex = texManager->loadTexture(frightenedPath);
     currentEye = eyeDown;
+
     return eyeUp && eyeDown && eyeLeft && eyeRight && bodyTex1 && bodyTex2;
 }
+
 
 
 void Ghost::setTarget(const SDL_Rect& targetRect) {
@@ -300,7 +353,6 @@ void Ghost::updateFrightened(const Map& map) {
         currentTile.x = ((rawTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
         currentTile.y = (rect.y + 8 - 3 * tileSize) / tileSize;
 
-        // جهت معکوس (مثل متد اصلی)
         Direction reverseDir;
         switch (currentDirection) {
             case UP:    reverseDir = DOWN; break;
@@ -403,15 +455,22 @@ void Ghost::updateFrightened(const Map& map) {
     updateHitbox();
 }
 
+SDL_Rect* Ghost::getHitBox() {
+    return &hitbox; // آدرس hitbox واقعی
+}
+
 
 void Ghost::render(SDL_Renderer* renderer) {
     SDL_Texture* texToRender = (bodyFrame == 0) ? bodyTex1 : bodyTex2;
-    if(getState() != FRIGHTENED) {
+    if(getState() != FRIGHTENED && getState() != EATEN) {
         if(texToRender) SDL_RenderCopy(renderer, texToRender, nullptr, &rect);
         if(currentEye) SDL_RenderCopy(renderer, currentEye, nullptr, &rect);
     }
     if(getState() == FRIGHTENED) {
         if(frightenedTex) SDL_RenderCopy(renderer,frightenedTex, nullptr, &rect);
+    }
+    if(getState() == EATEN) {
+        if(currentEye) SDL_RenderCopy(renderer, currentEye, nullptr, &rect);
     }
     renderTarget(renderer);
 //    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);

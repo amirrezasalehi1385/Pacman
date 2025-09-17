@@ -5,5 +5,6 @@ enum GhostState {
     EXIT,
     CHASE,
     SCATTER,
-    FRIGHTENED
+    FRIGHTENED,
+    EATEN
 };

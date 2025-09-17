@@ -29,5 +29,10 @@ void Blinky::update(const Pacman& pacman, const Map& map) {
             break;
         case FRIGHTENED :
             Ghost::update(map);
+            break;
+        case EATEN:
+            setTargetTile(13, 14);
+            Ghost::update(map);
+            break;
     }
 }

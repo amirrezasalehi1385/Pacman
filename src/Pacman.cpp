@@ -1,5 +1,6 @@
 #include "../include/Pacman.h"
 #include "../include/TextureManager.h"
+#include "../include/Ghost.h"
 
 Pacman::Pacman(int x, int y, int w, int h)
         : frameIndex(0), frameDir(1), lastTime(SDL_GetTicks()), dotsEaten(0) {
@@ -86,6 +87,7 @@ void Pacman::handleInput(const SDL_Event& event) {
         }
     }
 }void Pacman::move(Map* map, int speed) {
+
     SDL_Rect testHitbox = hitbox;
     SDL_Point nextTile = getTile();
 
@@ -112,6 +114,8 @@ void Pacman::handleInput(const SDL_Event& event) {
         default: break;
     }
 
+
+
     if(currentDir != STOP && !map->checkCollision(nextHitbox) &&
        !Map::isInGhostHouse(currNextTile.x, currNextTile.y))
     {
@@ -133,6 +137,14 @@ void Pacman::handleInput(const SDL_Event& event) {
             ateBigDot = true;
         }
     }
+//    for (Ghost* g : ghosts) {
+//        if(SDL_HasIntersection(&hitbox, g->getHitBox()) && g->getState() == FRIGHTENED) {
+//            g->ghostEaten = true;
+//            g->setState(EATEN);
+//        }
+//    }
+
+
 
     // wrap افقی
     int mapWidth = 28 * 16;

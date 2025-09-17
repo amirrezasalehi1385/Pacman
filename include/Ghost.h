@@ -12,17 +12,13 @@ class Ghost {
 public:
     bool canGotoGhostHouse;
     bool readyToExit;
+    bool ghostEaten;
+    Uint32 eatenUntil = 0;  // زمان پایان حالت EATEN
     Ghost(int x, int y, int w, int h);
 
-    bool loadTextures(TextureManager* texManager,
-                      const std::string& upPath,
-                      const std::string& downPath,
-                      const std::string& leftPath,
-                      const std::string& rightPath,
-                      const std::string& bodyPath1,
-                      const std::string& bodyPath2,
-                      const std::string& frightenedPath);
+    bool loadTextures(TextureManager* texManager, const std::vector<std::string>& paths);
 
+    bool checkCollisionWithPacman(Pacman* pacman);
     void update(const Map& map);
     void render(SDL_Renderer* renderer);
     void setPosition(int x, int y);
@@ -38,6 +34,7 @@ public:
     void updateBodyAnimation();
     void setState(GhostState ghostState);
     void setMode(GhostState mode);
+    SDL_Rect* getHitBox();
     void updateFrightened(const Map& map);
     void wait();
     GhostState getState() const { return state; }
@@ -67,6 +64,7 @@ private:
     int frameSpeed = 8;
     SDL_Texture* eyeUp;
     SDL_Texture* eyeDown;
+
     SDL_Texture* eyeLeft;
     SDL_Texture* eyeRight;
     SDL_Texture* currentEye;
