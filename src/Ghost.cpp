@@ -10,6 +10,7 @@
 
 
 Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0){
+    endOfFrightening = false;
     canGotoGhostHouse = true;
     readyToExit = false;
     ghostEaten = false;
@@ -33,7 +34,6 @@ bool Ghost::checkCollisionWithPacman(Pacman* pacman) {
     if(SDL_HasIntersection(&hitbox, &pacHitbox)) {
         if(state == FRIGHTENED) {
             ghostEaten = true;
-            state = EATEN;
         }
         return true;
     }
@@ -205,7 +205,9 @@ bool Ghost::loadTextures(TextureManager* texManager, const std::vector<std::stri
     bodyTex1 = texManager->loadTexture(paths[4]);
     bodyTex2 = texManager->loadTexture(paths[5]);
     frightenedTex = texManager->loadTexture(paths[6]);
-
+    frightenedTex2 = texManager->loadTexture(paths[7]);
+    endFrightened = texManager->loadTexture(paths[8]);
+    endFrightened2 = texManager->loadTexture(paths[9]);
     currentEye = eyeDown;
 
     return eyeUp && eyeDown && eyeLeft && eyeRight && bodyTex1 && bodyTex2;
@@ -462,12 +464,16 @@ SDL_Rect* Ghost::getHitBox() {
 
 void Ghost::render(SDL_Renderer* renderer) {
     SDL_Texture* texToRender = (bodyFrame == 0) ? bodyTex1 : bodyTex2;
+    SDL_Texture* frightenedToRender = (bodyFrame == 0) ? frightenedTex : frightenedTex2;
+    SDL_Texture* endFrightenedToRender = (bodyFrame == 0) ? endFrightened : endFrightened2;
+    SDL_Texture* endFrightToRender = (bodyFrame == 0) ? frightenedToRender : endFrightenedToRender;
     if(getState() != FRIGHTENED && getState() != EATEN) {
         if(texToRender) SDL_RenderCopy(renderer, texToRender, nullptr, &rect);
         if(currentEye) SDL_RenderCopy(renderer, currentEye, nullptr, &rect);
     }
     if(getState() == FRIGHTENED) {
-        if(frightenedTex) SDL_RenderCopy(renderer,frightenedTex, nullptr, &rect);
+        if(frightenedToRender) SDL_RenderCopy(renderer,frightenedToRender, nullptr, &rect);
+        if(endOfFrightening) SDL_RenderCopy(renderer,endFrightToRender, nullptr, &rect);
     }
     if(getState() == EATEN) {
         if(currentEye) SDL_RenderCopy(renderer, currentEye, nullptr, &rect);

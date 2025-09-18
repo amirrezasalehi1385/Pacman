@@ -13,6 +13,7 @@ public:
     bool canGotoGhostHouse;
     bool readyToExit;
     bool ghostEaten;
+    bool endOfFrightening;
     Uint32 eatenUntil = 0;  // زمان پایان حالت EATEN
     Ghost(int x, int y, int w, int h);
 
@@ -22,7 +23,7 @@ public:
     void update(const Map& map);
     void render(SDL_Renderer* renderer);
     void setPosition(int x, int y);
-    Direction bfsFindDirection(const Map& map, int startX, int startY, int targetX, int targetY);
+//    Direction bfsFindDirection(const Map& map, int startX, int startY, int targetX, int targetY);
     SDL_Point getCurrentTile() const;
     void setTarget(const SDL_Rect& targetRect);
     void setTargetTile(int tileX, int tileY);
@@ -57,6 +58,9 @@ private:
     SDL_Texture* bodyTex1;
     SDL_Texture* bodyTex2;
     SDL_Texture* frightenedTex;
+    SDL_Texture* frightenedTex2;
+    SDL_Texture* endFrightened;
+    SDL_Texture* endFrightened2;
     int bodyFrame = 0;
     SDL_Texture* targetTexture;
     SDL_Texture* bodyTex;
@@ -64,7 +68,6 @@ private:
     int frameSpeed = 8;
     SDL_Texture* eyeUp;
     SDL_Texture* eyeDown;
-
     SDL_Texture* eyeLeft;
     SDL_Texture* eyeRight;
     SDL_Texture* currentEye;
