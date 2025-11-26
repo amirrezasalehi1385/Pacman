@@ -41,12 +41,25 @@ Game::~Game() {
 
 }
 
+
+
 bool Game::init(const std::string& title, int w, int h) {
+    gameStartTime = SDL_GetTicks();
     gameStartTime = SDL_GetTicks();
     modeStartTime = gameStartTime;
     cycleStarted = true;
     currentMode = SCATTER;
-    cycleIndex = 0;    if(!windowManager.init(title.c_str(), w, h)) return false;
+    cycleIndex = 0;
+
+    if(!windowManager.init(title.c_str(), w, h)) return false;
+
+    // --- پخش صوتی ---
+    if(!windowManager.loadAudio("assets/Sounds/pacman_beginning.wav")) {
+        std::cerr << "Failed to load sound!" << std::endl;
+    } else {
+        windowManager.playAudio(1); // 0 = فقط یکبار پخش
+    }
+    // --- ادامه کد قبلی ---
     textureManager = new TextureManager(windowManager.getRenderer());
 
     backgroundTexture = textureManager->loadTexture("assets/map/background.png");
