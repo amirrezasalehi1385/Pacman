@@ -14,7 +14,6 @@ public:
     bool readyToExit;
     bool ghostEaten;
     bool endOfFrightening;
-    Uint32 eatenUntil = 0;  // زمان پایان حالت EATEN
     Ghost(int x, int y, int w, int h);
 
     bool loadTextures(TextureManager* texManager, const std::vector<std::string>& paths);

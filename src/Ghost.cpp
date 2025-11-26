@@ -83,6 +83,7 @@ void Ghost::update(const Map& map) {
             break;
         case EXIT:
             getOutOfHouse(map);
+            canGotoGhostHouse = true;
             break;
         case CHASE:
         case SCATTER:
@@ -94,8 +95,13 @@ void Ghost::update(const Map& map) {
             updateFrightened(map);
             break;
         case EATEN:
+            speed = 4;
             canGotoGhostHouse = true;
             updateChaseScatter(map);
+            if (currentTile.x == 13 && currentTile.y == 14) {
+                speed = 2;
+                setMode(EXIT);
+            }
     }
     updateBodyAnimation();
 }
@@ -107,7 +113,7 @@ void Ghost::getOutOfHouse(const Map& map) {
     const int mapHeightTiles = 31;
     const int exitTileX = 14;
     const int exitTileY = 11;
-    const int offsetX = -8; // شیفت 8 پیکسل به چپ
+    const int offsetX = -8;
 
     if (pixelsMoved == 0) {
         int rawTileX = (rect.x + 8 - offsetX) / tileSize; // توجه: برای collision، offset برگردونده شد
@@ -148,7 +154,6 @@ void Ghost::getOutOfHouse(const Map& map) {
         }
     }
 
-    // حرکت واقعی با شیفت offset
     if (currentDirection != STOP) {
         switch (currentDirection) {
             case UP:
@@ -186,7 +191,6 @@ void Ghost::getOutOfHouse(const Map& map) {
         currentTile.x = newTileX;
         currentTile.y = newTileY;
 
-        printf("Ghost moved to tile (%d,%d)\n", currentTile.x, currentTile.y);
     }
 
     updateHitbox();
@@ -373,20 +377,14 @@ void Ghost::updateFrightened(const Map& map) {
             int nx = currentTile.x + dirs[i].x;
             int ny = currentTile.y + dirs[i].y;
 
-            // جلوگیری از معکوس شدن
             if (dir == reverseDir) continue;
 
-            // قانون no-up zone (مثل متد اصلی)
-            bool inNoUpZoneNextTile = ((ny == 1 || ny == 22) && (nx >= 12 && nx <= 17));
-            if (dir == UP && inNoUpZoneNextTile) continue;
             if (!canGotoGhostHouse && Map::isInGhostHouse(nx, ny)) continue;
 
-            // بررسی تونل و مرزها
             bool isValidTile = false;
             int actualNx = nx;
 
             if (ny == tunnelRow) {
-                // مدیریت تونل افقی
                 if (nx < 0) actualNx = mapWidthTiles - 1;
                 else if (nx >= mapWidthTiles) actualNx = 0;
 
@@ -394,7 +392,6 @@ void Ghost::updateFrightened(const Map& map) {
                     isValidTile = map.isWalkable(actualNx, ny);
                 }
             } else {
-                // حرکت عادی
                 if (nx >= 0 && nx < mapWidthTiles && ny >= 0 && ny < mapHeightTiles) {
                     actualNx = nx;
                     isValidTile = map.isWalkable(actualNx, ny);
@@ -406,17 +403,14 @@ void Ghost::updateFrightened(const Map& map) {
             }
         }
 
-        // انتخاب تصادفی از جهات ممکن
         if (!possibleDirs.empty()) {
             int idx = rand() % possibleDirs.size();
             currentDirection = possibleDirs[idx];
         } else if (reverseDir != STOP) {
-            // اگه هیچ راهی نبود، معکوس شو
             currentDirection = reverseDir;
         }
     }
 
-    // حرکت
     if (currentDirection != STOP) {
         switch (currentDirection) {
             case UP:    rect.y -= speed; currentEye = eyeUp; break;
@@ -428,11 +422,9 @@ void Ghost::updateFrightened(const Map& map) {
         pixelsMoved += speed;
     }
 
-    // کامل شدن حرکت به کاشی بعدی
     if (pixelsMoved >= tileSize) {
         pixelsMoved = 0;
 
-        // محاسبه موقعیت جدید (درست کردن currentTile)
         int rawNewTileX = (rect.x + 8) / tileSize;
         int newTileX = ((rawNewTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
         int newTileY = (rect.y + 8 - 3 * tileSize) / tileSize;
@@ -441,12 +433,10 @@ void Ghost::updateFrightened(const Map& map) {
         rect.x = newTileX * tileSize + 8 - rect.w / 2;
         rect.y = newTileY * tileSize + 3 * tileSize + 8 - rect.h / 2;
 
-        // آپدیت currentTile
         currentTile.x = newTileX;
         currentTile.y = newTileY;
     }
 
-    // مدیریت تونل افقی برای موقعیت نمایش
     int mapWidth = mapWidthTiles * tileSize;
     if (rect.x + rect.w/2 < 0) {
         rect.x = mapWidth - rect.w/2;

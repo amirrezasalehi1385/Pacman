@@ -196,36 +196,20 @@ void Game::update() {
     if(blinky->ghostEaten && blinky->getState() == FRIGHTENED) {
         blinky->setState(EATEN);
         blinky->ghostEaten = false;
-        blinky->eatenUntil = now + 7000; // 7 ثانیه
     }
     if(pinky->ghostEaten && pinky->getState() == FRIGHTENED) {
         pinky->setState(EATEN);
         pinky->ghostEaten = false;
-        pinky->eatenUntil = now + 7000;
     }
     if(inky->ghostEaten && inky->getState() == FRIGHTENED) {
         inky->setState(EATEN);
         inky->ghostEaten = false;
-        inky->eatenUntil = now + 7000;
     }
     if(clyde->ghostEaten && clyde->getState() == FRIGHTENED) {
         clyde->setState(EATEN);
         clyde->ghostEaten = false;
-        clyde->eatenUntil = now + 7000;
     }
 
-    if(blinky->getState() == EATEN && now > blinky->eatenUntil) {
-        blinky->setMode(currentMode);
-    }
-    if(pinky->getState() == EATEN && now > pinky->eatenUntil) {
-        pinky->setMode(currentMode);
-    }
-    if(inky->getState() == EATEN && now > inky->eatenUntil) {
-        inky->setMode(currentMode);
-    }
-    if(clyde->getState() == EATEN && now > clyde->eatenUntil) {
-        clyde->setMode(currentMode);
-    }
 
     if (frightenedUntil != 0) {
         Uint32 remaining = frightenedUntil - now;
@@ -269,13 +253,13 @@ void Game::update() {
     if(blinky->getState() == SCATTER || blinky->getState() == CHASE){
         blinky->setMode(currentMode);
     }
-    if(pinky->getState() == SCATTER || blinky->getState() == CHASE){
+    if(pinky->getState() == SCATTER || pinky->getState() == CHASE){
         pinky->setMode(currentMode);
     }
-    if(inky->getState() == SCATTER || blinky->getState() == CHASE){
+    if(inky->getState() == SCATTER || inky->getState() == CHASE){
         inky->setMode(currentMode);
     }
-    if(clyde->getState() == SCATTER || blinky->getState() == CHASE){
+    if(clyde->getState() == SCATTER || clyde->getState() == CHASE){
         clyde->setMode(currentMode);
     }
 

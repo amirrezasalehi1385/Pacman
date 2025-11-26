@@ -15,7 +15,7 @@ void Blinky::update(const Pacman& pacman, const Map& map) {
             break;
 
         case EXIT:
-            state = CHASE;
+            getOutOfHouse(map);
             break;
 
         case CHASE:
