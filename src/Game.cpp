@@ -44,6 +44,14 @@ Game::~Game() {
 
 
 bool Game::init(const std::string& title, int w, int h) {
+    if(!windowManager.init(title.c_str(), w, h))
+        return false;
+    windowManager.loadSound("chomp", "assets/Sounds/pacman_chomp.wav");
+    windowManager.loadSound("frightened", "assets/Sounds/pacman_eatghost.wav");
+    windowManager.loadSound("eaten", "assets/Sounds/pacman_ghosteaten.wav");
+//    windowManager.loadSound("waka", "assets/Sounds/pacman-waka.wav");
+    windowManager.loadSound("beginning", "assets/Sounds/pacman_beginning.wav");
+
     gameStartTime = SDL_GetTicks();
     gameStartTime = SDL_GetTicks();
     modeStartTime = gameStartTime;
@@ -51,15 +59,10 @@ bool Game::init(const std::string& title, int w, int h) {
     currentMode = SCATTER;
     cycleIndex = 0;
 
-    if(!windowManager.init(title.c_str(), w, h)) return false;
 
-    // --- پخش صوتی ---
-    if(!windowManager.loadAudio("assets/Sounds/pacman_beginning.wav")) {
-        std::cerr << "Failed to load sound!" << std::endl;
-    } else {
-        windowManager.playAudio(1); // 0 = فقط یکبار پخش
-    }
-    // --- ادامه کد قبلی ---
+
+
+    windowManager.playSound("beginning");
     textureManager = new TextureManager(windowManager.getRenderer());
 
     backgroundTexture = textureManager->loadTexture("assets/map/background.png");
@@ -68,6 +71,7 @@ bool Game::init(const std::string& title, int w, int h) {
     gameMap->loadLevel1();
 
     pacman = new Pacman(13 * 16 + 3, 25 * 16 + 11, 26, 26);
+    pacman->setWindowManager(&windowManager);
     pacman->loadTextures(textureManager, "assets/Pacman/2.png","assets/Pacman/1.png", "assets/Pacman/0.png");
 
     blinky = new Blinky(14, 12, 28, 28);
@@ -83,7 +87,7 @@ bool Game::init(const std::string& title, int w, int h) {
             "assets/ghost/endFrightening.png",
             "assets/ghost/endFrightening2.png"
     };
-
+    blinky->setWindowManager(&windowManager);
     blinky->loadTextures(textureManager, blinkyTextures);
 
 //    blinky->loadTargetTexture(windowManager.getRenderer(), "assets/blinky_target.png");
@@ -101,6 +105,7 @@ bool Game::init(const std::string& title, int w, int h) {
             "assets/ghost/endFrightening.png",
             "assets/ghost/endFrightening2.png"
     };
+    pinky->setWindowManager(&windowManager);
 
     pinky->loadTextures(textureManager, pinkyTextures);
 //    pinky->loadTargetTexture(windowManager.getRenderer(), "assets/pinky_target.png");
@@ -118,6 +123,7 @@ bool Game::init(const std::string& title, int w, int h) {
             "assets/ghost/endFrightening.png",
             "assets/ghost/endFrightening2.png"
     };
+    inky->setWindowManager(&windowManager);
 
     inky->loadTextures(textureManager, InkyTextures);
 //    inky->loadTargetTexture(windowManager.getRenderer(), "assets/inky_target.png");
@@ -135,9 +141,12 @@ bool Game::init(const std::string& title, int w, int h) {
             "assets/ghost/endFrightening2.png"
 
     };
+    clyde->setWindowManager(&windowManager);
 
     clyde->loadTextures(textureManager, clydeTextures);
 //    clyde->loadTargetTexture(windowManager.getRenderer(), "assets/clyde_target.png");
+
+
     isRunning = true;
     return true;
 }
@@ -196,6 +205,9 @@ void Game::update() {
     if (pacman->ateBigDot) {
         pacman->ateBigDot = false;
         frightenedUntil = now + 6000;
+        if (now < frightenedUntil) {
+            windowManager.playSound("frightened");
+        }
 
         if(blinky->getState() != WAIT && blinky->getState() != EXIT)
             blinky->setState(FRIGHTENED);
@@ -208,17 +220,23 @@ void Game::update() {
     }
     if(blinky->ghostEaten && blinky->getState() == FRIGHTENED) {
         blinky->setState(EATEN);
+        windowManager.playSound("eaten");
         blinky->ghostEaten = false;
     }
     if(pinky->ghostEaten && pinky->getState() == FRIGHTENED) {
+        windowManager.playSound("eaten");
         pinky->setState(EATEN);
         pinky->ghostEaten = false;
     }
     if(inky->ghostEaten && inky->getState() == FRIGHTENED) {
+        windowManager.playSound("eaten");
+
         inky->setState(EATEN);
         inky->ghostEaten = false;
     }
     if(clyde->ghostEaten && clyde->getState() == FRIGHTENED) {
+        windowManager.playSound("eaten");
+
         clyde->setState(EATEN);
         clyde->ghostEaten = false;
     }

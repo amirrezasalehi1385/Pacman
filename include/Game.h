@@ -26,7 +26,7 @@ private:
     void update();
     void render();
     bool isRunning = false;
-    int speed = 4;
+    int speed = 2;
 
     WindowManager windowManager;
     TextureManager* textureManager;

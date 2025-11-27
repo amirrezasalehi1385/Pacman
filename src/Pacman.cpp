@@ -1,4 +1,5 @@
 #include "../include/Pacman.h"
+#include "../include/WindowManager.h"
 #include "../include/TextureManager.h"
 #include "../include/Ghost.h"
 
@@ -131,6 +132,7 @@ void Pacman::handleInput(const SDL_Event& event) {
         if(cell == 21) {
             setDotsEaten(dotsEaten + 1);
             cell = 0;
+            if(dotsEaten % 5 == 0)   windowManager->playSound("chomp");
         } else if(cell == 22) {
             setBigDotsEaten(dotsEaten + 1);
             cell = 0;

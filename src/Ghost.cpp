@@ -9,7 +9,7 @@
 #include <SDL2/SDL.h>
 
 
-Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(2), pixelsMoved(0){
+Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(1.5), pixelsMoved(0){
     endOfFrightening = false;
     canGotoGhostHouse = true;
     readyToExit = false;
@@ -50,12 +50,12 @@ void Ghost::wait() {
     }
 
     switch (currentDirection) {
-        case UP:    rect.y -= speed / 2; currentEye = eyeUp; break;
-        case DOWN:  rect.y += speed / 2; currentEye = eyeDown; break;
+        case UP:    rect.y -= 1; currentEye = eyeUp; break;
+        case DOWN:  rect.y += 1; currentEye = eyeDown; break;
         default: break;
     }
 
-    pixelsMoved += speed / 2;
+    pixelsMoved += 1;
 
     if(pixelsMoved >= tileSize) {
         pixelsMoved = 0;
@@ -95,11 +95,11 @@ void Ghost::update(const Map& map) {
             updateFrightened(map);
             break;
         case EATEN:
-            speed = 4;
+            speed = 3;
             canGotoGhostHouse = true;
             updateChaseScatter(map);
             if (currentTile.x == 13 && currentTile.y == 14) {
-                speed = 2;
+                speed = 1.5;
                 setMode(EXIT);
             }
     }
@@ -448,7 +448,7 @@ void Ghost::updateFrightened(const Map& map) {
 }
 
 SDL_Rect* Ghost::getHitBox() {
-    return &hitbox; // آدرس hitbox واقعی
+    return &hitbox;
 }
 
 

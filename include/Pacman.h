@@ -3,6 +3,7 @@
 #include <string>
 #include "Direction.h"
 #include "Map.h"
+#include "WindowManager.h"
 
 class TextureManager;
 
@@ -24,6 +25,9 @@ public:
     int getBigDotsEaten() const;
     void setPosition(int x, int y);
     void setDirection(Direction dir) { currentDir = dir; }
+    void setWindowManager(WindowManager* wm) {
+        windowManager = wm;
+    }
     void setDotsEaten(int x);
     Direction getDirection() const { return currentDir; }
     void handleInput(const SDL_Event& event);
@@ -39,6 +43,7 @@ private:
     SDL_Rect rect;
     SDL_Rect hitbox;
     SDL_Texture* frames[3];
+    WindowManager* windowManager = nullptr;
     int frameIndex;
     int frameDir;
     Uint32 lastTime;

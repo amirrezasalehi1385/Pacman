@@ -21,6 +21,9 @@ public:
     bool checkCollisionWithPacman(Pacman* pacman);
     void update(const Map& map);
     void render(SDL_Renderer* renderer);
+    void setWindowManager(WindowManager* wm) {
+        windowManager = wm;
+    }
     void setPosition(int x, int y);
 //    Direction bfsFindDirection(const Map& map, int startX, int startY, int targetX, int targetY);
     SDL_Point getCurrentTile() const;
@@ -70,6 +73,6 @@ private:
     SDL_Texture* eyeLeft;
     SDL_Texture* eyeRight;
     SDL_Texture* currentEye;
-
+    WindowManager* windowManager;
     void updateHitbox();
 };
