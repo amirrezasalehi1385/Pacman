@@ -34,6 +34,8 @@ bool Ghost::checkCollisionWithPacman(Pacman* pacman) {
     if(SDL_HasIntersection(&hitbox, &pacHitbox)) {
         if(state == FRIGHTENED) {
             ghostEaten = true;
+        }else {
+            pacman->isAlive = false;
         }
         return true;
     }
@@ -76,6 +78,8 @@ void Ghost::updateBodyAnimation() {
 
 
 void Ghost::update(const Map& map) {
+    if(frozen) return;  // اگر فریز شده، هیچ کاری نکند
+
     switch(state) {
         case WAIT:
             wait();
@@ -105,6 +109,7 @@ void Ghost::update(const Map& map) {
     }
     updateBodyAnimation();
 }
+
 
 
 void Ghost::getOutOfHouse(const Map& map) {

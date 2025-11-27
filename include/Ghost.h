@@ -41,6 +41,7 @@ public:
     void updateFrightened(const Map& map);
     void wait();
     GhostState getState() const { return state; }
+    void setFrozen(bool val) { frozen = val; }
 
 protected:
     SDL_Point targetTile;
@@ -74,5 +75,6 @@ private:
     SDL_Texture* eyeRight;
     SDL_Texture* currentEye;
     WindowManager* windowManager;
+    bool frozen = false;  // اضافه کردن به کلاس
     void updateHitbox();
 };

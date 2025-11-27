@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <string>
+#include <functional>
 #include "Direction.h"
 #include "Map.h"
 #include "WindowManager.h"
@@ -28,7 +29,8 @@ public:
     void setWindowManager(WindowManager* wm) {
         windowManager = wm;
     }
-    void setDotsEaten(int x);
+    void die();
+        void setDotsEaten(int x);
     Direction getDirection() const { return currentDir; }
     void handleInput(const SDL_Event& event);
     void move(Map* map, int speed);
@@ -36,11 +38,18 @@ public:
     void setNextDirection(Direction dir) { nextDir = dir; }
     SDL_Point getTile() const;
     bool ateBigDot = false;
+// Pacman.h
+    std::function<void()> onDeathAnimationFinished;
+    bool isDying = false;
+    int deathFrame = 0;
+    Uint32 deathStartTime = 0;
+    const int deathFrameDelay = 150;
+    SDL_Rect rect;
+    bool isAlive = true;
 
 private:
     Direction currentDir = STOP;
     Direction nextDir = STOP;
-    SDL_Rect rect;
     SDL_Rect hitbox;
     SDL_Texture* frames[3];
     WindowManager* windowManager = nullptr;

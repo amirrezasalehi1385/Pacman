@@ -14,7 +14,14 @@ public:
     bool init(const std::string& title, int w, int h);
     void run();
     void quit();
+    void handlePacmanDeath();
+    bool pacmanDied = false;
+    bool showGameOver = false;
+    Uint32 gameOverStartTime = 0;
+
+    std::vector<SDL_Texture*> pacmanDeathTextures;
 private:
+
         std::vector<Uint32> cycleTimes = {15000, 20000,15000, 20000, 15000, 20000, 15000};
     GhostState currentMode = SCATTER;
     int cycleIndex = 0;

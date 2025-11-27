@@ -28,6 +28,21 @@ void Pacman::update() {
         else if(frameIndex == 0) frameDir = 1;
         lastTime = currentTime;
     }
+//    if(isDying) {
+//        Uint32 now = SDL_GetTicks();
+//        if(now - deathStartTime >= deathFrameDelay) {
+//            deathFrame++;
+//            deathStartTime = now;
+//            if(deathFrame >= pacmanDeathTextures.size()) {
+//                isDying = false;
+//                if(onDeathAnimationFinished)
+//                    onDeathAnimationFinished();
+//            }
+//        }
+//        return; // حرکت Pacman رو نکن
+//    }
+
+
     updateHitbox();
 }
 
@@ -46,6 +61,17 @@ void Pacman::render(SDL_Renderer* renderer) {
     double angle = getAngle();
 
     if(tex) SDL_RenderCopyEx(renderer, tex, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);
+//    if(isDying) {
+//        if(deathFrame < pacmanDeathTextures.size())
+//            SDL_RenderCopy(windowManager.getRenderer(), pacmanDeathTextures[deathFrame], nullptr, &rect);
+//    } else {
+//        SDL_Texture* tex = frames[frameIndex];
+//        double angle = getAngle();
+//        if(tex)
+//            SDL_RenderCopyEx(windowManager.getRenderer(), tex, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);
+//    }
+
+
 }
 
 
@@ -88,7 +114,6 @@ void Pacman::handleInput(const SDL_Event& event) {
         }
     }
 }void Pacman::move(Map* map, int speed) {
-
     SDL_Rect testHitbox = hitbox;
     SDL_Point nextTile = getTile();
 
@@ -139,22 +164,18 @@ void Pacman::handleInput(const SDL_Event& event) {
             ateBigDot = true;
         }
     }
-//    for (Ghost* g : ghosts) {
-//        if(SDL_HasIntersection(&hitbox, g->getHitBox()) && g->getState() == FRIGHTENED) {
-//            g->ghostEaten = true;
-//            g->setState(EATEN);
-//        }
-//    }
 
 
 
-    // wrap افقی
     int mapWidth = 28 * 16;
     if(rect.x + rect.w < 0) rect.x = mapWidth;
     else if(rect.x > mapWidth) rect.x = -rect.w;
 
     updateHitbox();
 }
+
+
+
 
 SDL_Point Pacman::getTile() const {
     SDL_Point tile;
