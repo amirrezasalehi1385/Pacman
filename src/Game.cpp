@@ -1,15 +1,11 @@
 #include "../include/Game.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include "../include/Map.h"
-#include "../include/Pacman.h"
 #include "../include/Blinky.h"
-#include "../include/Direction.h"
-#include "../include/Blinky.h"
-#include "../include/Pathfinder.h"
 #include "../include/Pinky.h"
 #include "../include/Inky.h"
 #include "../include/Clyde.h"
+#include <SDL2/SDL_ttf.h>
 
 
 Ghost* ghost;
@@ -32,6 +28,11 @@ Clyde* clyde;
 
 
 Game::~Game() {
+    if(font) {
+        TTF_CloseFont(font);
+        font = nullptr;
+    }
+
     if(pacman) { pacman->cleanup(); delete pacman; }
     if(textureManager) delete textureManager;
     if (backgroundTexture) {
@@ -39,19 +40,25 @@ Game::~Game() {
         backgroundTexture = nullptr;
     }
 
+    for(auto tex : livesTextures) {
+        if(tex) SDL_DestroyTexture(tex);
+    }
+    livesTextures.clear();
 }
 
 bool pacmanDied;
 
+void Game::loadSounds() {
+        windowManager.loadSound("chomp", "assets/Sounds/pacman_chomp.wav");
+        windowManager.loadSound("frightened", "assets/Sounds/pacman-ghostfrightened.wav");
+        windowManager.loadSound("eaten", "assets/Sounds/pacman_eatghost.wav");
+        windowManager.loadSound("death", "assets/Sounds/pacman_death.wav");
+        windowManager.loadSound("beginning", "assets/Sounds/pacman_beginning.wav");
+};
 bool Game::init(const std::string& title, int w, int h) {
     if(!windowManager.init(title.c_str(), w, h))
         return false;
-    windowManager.loadSound("chomp", "assets/Sounds/pacman_chomp.wav");
-    windowManager.loadSound("frightened", "assets/Sounds/pacman-ghostfrightened.wav");
-    windowManager.loadSound("eaten", "assets/Sounds/pacman_eatghost.wav");
-    windowManager.loadSound("death", "assets/Sounds/pacman_death.wav");
-    windowManager.loadSound("beginning", "assets/Sounds/pacman_beginning.wav");
-
+    loadSounds();
     gameStartTime = SDL_GetTicks();
     gameStartTime = SDL_GetTicks();
     modeStartTime = gameStartTime;
@@ -59,7 +66,16 @@ bool Game::init(const std::string& title, int w, int h) {
     currentMode = SCATTER;
     cycleIndex = 0;
 
+    if (TTF_Init() != 0) {
+        SDL_Log("TTF_Init Error: %s", TTF_GetError());
+        return false;
+    }
 
+    font = TTF_OpenFont("assets/fonts/Emulogic-zrEw.ttf", 24);
+    if(!font) {
+        SDL_Log("Failed to load font: %s", TTF_GetError());
+        return false;
+    }
 
 
     windowManager.playSound("beginning");
@@ -146,6 +162,11 @@ bool Game::init(const std::string& title, int w, int h) {
     clyde->loadTextures(textureManager, clydeTextures);
     clyde->loadTargetTexture(windowManager.getRenderer(), "assets/clyde_target.png");
 
+    ghosts.push_back(blinky);
+    ghosts.push_back(pinky);
+    ghosts.push_back(inky);
+    ghosts.push_back(clyde);
+
     for(int i = 1; i < 12; i++) {
         std::string path = "assets/Pacman/pacman_death_" + std::to_string(i) + ".png";
         SDL_Surface* surface = IMG_Load(path.c_str());
@@ -157,28 +178,34 @@ bool Game::init(const std::string& title, int w, int h) {
         SDL_FreeSurface(surface);
         if(tex) pacmanDeathTextures.push_back(tex);
     }
+    for(int i = 0; i < 3; i++) {
+        SDL_Texture* lifeTex = textureManager->loadTexture("assets/Pacman/1.png");
+        if(lifeTex) livesTextures.push_back(lifeTex);
+    }
+
+    lives = 3;
 
     isRunning = true;
     return true;
+
 }
 
+void Game::resetPacmanPosition() {
+    pacman->setPosition(13 * 16 + 3, 25 * 16 + 11);
+    pacman->isAlive = true;
+    currentDir = STOP;
+    nextDir = STOP;
+}
 void Game::handlePacmanDeath() {
-    pacmanDied = true;
-
-    // پخش صدای مرگ
     windowManager.playSound("death");
 
-    SDL_Delay(500); // صبر کوتاه برای شروع صدا
-
     const int frameCount = pacmanDeathTextures.size();
-    const int frameDelay = 150; // ms
+    const int frameDelay = 150;
 
     for(int i = 0; i < frameCount; i++) {
-        // صفحه سیاه
         SDL_SetRenderDrawColor(windowManager.getRenderer(), 0, 0, 0, 255);
         SDL_RenderClear(windowManager.getRenderer());
 
-        // انیمیشن مرگ Pacman
         SDL_Rect dst = pacman->rect;
         SDL_RenderCopy(windowManager.getRenderer(), pacmanDeathTextures[i], nullptr, &dst);
 
@@ -186,10 +213,46 @@ void Game::handlePacmanDeath() {
         SDL_Delay(frameDelay);
     }
 
-    // بعد از آخرین فریم، مستقیم بازی رو ببند
-    quit();
+    lives--;
+
+    if(lives > 0) {
+        SDL_Delay(500);
+        resetPacmanPosition();
+
+        frightenedUntil = 0;
+        if(blinky->getState() == FRIGHTENED) blinky->setMode(currentMode);
+        if(pinky->getState() == FRIGHTENED) pinky->setMode(currentMode);
+        if(inky->getState() == FRIGHTENED) inky->setMode(currentMode);
+        if(clyde->getState() == FRIGHTENED) clyde->setMode(currentMode);
+
+        blinky->endOfFrightening = false;
+        pinky->endOfFrightening = false;
+        inky->endOfFrightening = false;
+        clyde->endOfFrightening = false;
+    }
+    else {
+        quit();
+    }
 }
 
+
+void Game::renderLives() {
+    int startX = 2;
+    int startY = 576 - 29;
+    int spacing = 32;
+
+    for(int i = 0; i < lives; i++) {
+        if(i < livesTextures.size()) {
+            SDL_Rect lifeRect = {
+                    startX + i * spacing,
+                    startY,
+                    26,
+                    26
+            };
+            SDL_RenderCopy(windowManager.getRenderer(), livesTextures[i], nullptr, &lifeRect);
+        }
+    }
+}
 
 
 
@@ -203,22 +266,39 @@ void Game::render() {
     }
 
     gameMap->render();
-
     pacman->render(windowManager.getRenderer());
     blinky->render(windowManager.getRenderer());
     pinky->render(windowManager.getRenderer());
     inky->render(windowManager.getRenderer());
     clyde->render(windowManager.getRenderer());
-
+    renderLives();
+    renderScore();
     windowManager.present();
+}
+void Game::renderScore() {
+    if (!font) return;
+
+    SDL_Color color = {255, 255, 255, 255}; // سفید
+    std::string scoreText = "Score: " + std::to_string(getScore());
+
+    SDL_Surface* surface = TTF_RenderText_Solid(font, scoreText.c_str(), color);
+    if(!surface) return;
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surface);
+    SDL_FreeSurface(surface);
+
+    SDL_Rect dstRect = {8, 8, 100, 20};
+    SDL_RenderCopy(windowManager.getRenderer(), texture, nullptr, &dstRect);
+
+    SDL_DestroyTexture(texture);
 }
 
 
 void Game::run() {
-    const int FPS = 144;            // اینو هر چقدر میخوای بالا ببر
+    const int FPS = 144;
     const int frameDelay = 1000 / FPS;
 
-    const float fixedDelta = 1.0f / 60.0f;   // آپدیت با 60 بار در ثانیه
+    const float fixedDelta = 1.0f / 60.0f;
     float accumulator = 0;
 
     Uint32 lastTime = SDL_GetTicks();
@@ -227,19 +307,13 @@ void Game::run() {
         Uint32 now = SDL_GetTicks();
         float delta = (now - lastTime) / 1000.0f;
         lastTime = now;
-
         accumulator += delta;
-
         handleEvents();
-
-        // update با نرخ ثابت (60 بار در ثانیه)
         while (accumulator >= fixedDelta) {
-            update();               // سرعت ثابت
+            update();
             accumulator -= fixedDelta;
         }
-
         render();
-
         int frameTime = SDL_GetTicks() - now;
         if(frameDelay > frameTime) {
             SDL_Delay(frameDelay - frameTime);
@@ -248,6 +322,7 @@ void Game::run() {
 }
 
 void Game::update() {
+    setScore((pacman->getDotsEaten() * 10) + (pacman->getBigDotsEaten() * 50) );
     Uint32 now = SDL_GetTicks();
     if (!pacman->isAlive) {
         handlePacmanDeath();
@@ -259,68 +334,46 @@ void Game::update() {
     pinky->checkCollisionWithPacman(pacman);
     inky->checkCollisionWithPacman(pacman);
     clyde->checkCollisionWithPacman(pacman);
-    if (pacman->ateBigDot) {
+    if(pacman->ateBigDot) {
         pacman->ateBigDot = false;
-        frightenedUntil = now + 6000;
-        if (now < frightenedUntil) {
+        frightenedUntil = SDL_GetTicks() + frightenedTimes[currentFrightenedIndex];
+        if(SDL_GetTicks() < frightenedUntil) {
             windowManager.playSound("frightened");
         }
-
-        if(blinky->getState() != WAIT && blinky->getState() != EXIT)
-            blinky->setState(FRIGHTENED);
-        if(pinky->getState() != WAIT && pinky->getState() != EXIT)
-            pinky->setState(FRIGHTENED);
-        if(inky->getState() != WAIT && inky->getState() != EXIT)
-            inky->setState(FRIGHTENED);
-        if(clyde->getState() != WAIT && clyde->getState() != EXIT)
-            clyde->setState(FRIGHTENED);
-    }
-    if(blinky->ghostEaten && blinky->getState() == FRIGHTENED) {
-        blinky->setState(EATEN);
-        windowManager.playSound("eaten");
-        blinky->ghostEaten = false;
-    }
-    if(pinky->ghostEaten && pinky->getState() == FRIGHTENED) {
-        windowManager.playSound("eaten");
-        pinky->setState(EATEN);
-        pinky->ghostEaten = false;
-    }
-    if(inky->ghostEaten && inky->getState() == FRIGHTENED) {
-        windowManager.playSound("eaten");
-
-        inky->setState(EATEN);
-        inky->ghostEaten = false;
-    }
-    if(clyde->ghostEaten && clyde->getState() == FRIGHTENED) {
-        windowManager.playSound("eaten");
-
-        clyde->setState(EATEN);
-        clyde->ghostEaten = false;
+        for(auto g : ghosts) {
+            if(g->getState() != WAIT && g->getState() != EXIT && g->getState() != EATEN) {
+                g->setState(FRIGHTENED);
+                g->endOfFrightening = false;
+            }
+        }
+        if(currentFrightenedIndex < frightenedTimes.size() - 1) {
+            currentFrightenedIndex++;
+        }
     }
 
+    for(auto g : ghosts) {
+        if(g->ghostEaten && g->getState() == FRIGHTENED){
+            g->setState(EATEN);
+            windowManager.playSound("eaten");
+            g->ghostEaten = false;
+        }
+    }
 
     if (frightenedUntil != 0) {
         Uint32 remaining = frightenedUntil - now;
 
         if (remaining <= 2000) {
-            blinky->endOfFrightening = true;
-            pinky->endOfFrightening = true;
-            inky->endOfFrightening = true;
-            clyde->endOfFrightening = true;
+            for(auto g : ghosts) {
+                g->endOfFrightening = true;
+            }
         }
 
         if (remaining == 0 || now > frightenedUntil) {
             frightenedUntil = 0;
-
-            if(blinky->getState() == FRIGHTENED) blinky->setMode(currentMode);
-            if(pinky->getState() == FRIGHTENED) pinky->setMode(currentMode);
-            if(inky->getState() == FRIGHTENED) inky->setMode(currentMode);
-            if(clyde->getState() == FRIGHTENED) clyde->setMode(currentMode);
-
-            blinky->endOfFrightening = false;
-            pinky->endOfFrightening = false;
-            inky->endOfFrightening = false;
-            clyde->endOfFrightening = false;
+            for(auto g : ghosts) {
+                if(g->getState() == FRIGHTENED) g->setMode(currentMode);
+                g->endOfFrightening = false;
+            }
         }
     }
 
@@ -338,20 +391,11 @@ void Game::update() {
             cycleIndex++;
         }
     }
-
-    if(blinky->getState() == SCATTER || blinky->getState() == CHASE){
-        blinky->setMode(currentMode);
+    for(auto g : ghosts) {
+        if(g->getState() == SCATTER || g->getState() == CHASE){
+            g->setMode(currentMode);
+        }
     }
-    if(pinky->getState() == SCATTER || pinky->getState() == CHASE){
-        pinky->setMode(currentMode);
-    }
-    if(inky->getState() == SCATTER || inky->getState() == CHASE){
-        inky->setMode(currentMode);
-    }
-    if(clyde->getState() == SCATTER || clyde->getState() == CHASE){
-        clyde->setMode(currentMode);
-    }
-
     blinky->update(*pacman, *gameMap);
     inky->update(*pacman, *blinky, *gameMap);
     pinky->update(*pacman, *gameMap);
@@ -373,8 +417,6 @@ void Game::handleEvents() {
         pacman->handleInput(event);
     }
 }
-
-
 
 
 

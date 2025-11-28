@@ -30,7 +30,7 @@ public:
         windowManager = wm;
     }
     void die();
-        void setDotsEaten(int x);
+    void setDotsEaten(int x);
     Direction getDirection() const { return currentDir; }
     void handleInput(const SDL_Event& event);
     void move(Map* map, int speed);
@@ -38,12 +38,7 @@ public:
     void setNextDirection(Direction dir) { nextDir = dir; }
     SDL_Point getTile() const;
     bool ateBigDot = false;
-// Pacman.h
     std::function<void()> onDeathAnimationFinished;
-    bool isDying = false;
-    int deathFrame = 0;
-    Uint32 deathStartTime = 0;
-    const int deathFrameDelay = 150;
     SDL_Rect rect;
     bool isAlive = true;
 
@@ -57,6 +52,6 @@ private:
     int frameDir;
     Uint32 lastTime;
     int dotsEaten;
-    int bigDotsEaten;
+    int bigDotsEaten = 0;
     void updateHitbox();
 };

@@ -34,7 +34,7 @@ bool Ghost::checkCollisionWithPacman(Pacman* pacman) {
     if(SDL_HasIntersection(&hitbox, &pacHitbox)) {
         if(state == FRIGHTENED) {
             ghostEaten = true;
-        }else {
+        }else if(state == CHASE || state == SCATTER){
             pacman->isAlive = false;
         }
         return true;
@@ -205,7 +205,7 @@ void Ghost::getOutOfHouse(const Map& map) {
 
 
 bool Ghost::loadTextures(TextureManager* texManager, const std::vector<std::string>& paths) {
-    if(paths.size() < 7) return false; // حداقل 7 تکسچر نیاز داریم
+    if(paths.size() < 7) return false;
 
     eyeUp    = texManager->loadTexture(paths[0]);
     eyeDown  = texManager->loadTexture(paths[1]);

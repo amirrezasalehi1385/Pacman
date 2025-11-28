@@ -51,7 +51,7 @@ protected:
     GhostState state = WAIT;
 
 private:
-    const SDL_Rect ghostHouse = {11, 16, 8, 5}; // X, Y, width, height به تایل‌ها
+    const SDL_Rect ghostHouse = {11, 16, 8, 5};
     int pixelsMoved = 0;
     SDL_Rect rect;
     SDL_Rect eyeRect;
@@ -75,6 +75,6 @@ private:
     SDL_Texture* eyeRight;
     SDL_Texture* currentEye;
     WindowManager* windowManager;
-    bool frozen = false;  // اضافه کردن به کلاس
+    bool frozen = false;
     void updateHitbox();
 };

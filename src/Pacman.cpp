@@ -28,6 +28,7 @@ void Pacman::update() {
         else if(frameIndex == 0) frameDir = 1;
         lastTime = currentTime;
     }
+    if(!isAlive) return;
 //    if(isDying) {
 //        Uint32 now = SDL_GetTicks();
 //        if(now - deathStartTime >= deathFrameDelay) {
@@ -41,8 +42,6 @@ void Pacman::update() {
 //        }
 //        return; // حرکت Pacman رو نکن
 //    }
-
-
     updateHitbox();
 }
 
@@ -159,7 +158,7 @@ void Pacman::handleInput(const SDL_Event& event) {
             cell = 0;
             if(dotsEaten % 5 == 0)   windowManager->playSound("chomp");
         } else if(cell == 22) {
-            setBigDotsEaten(dotsEaten + 1);
+            setBigDotsEaten(bigDotsEaten + 1);
             cell = 0;
             ateBigDot = true;
         }

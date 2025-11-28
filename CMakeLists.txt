@@ -13,12 +13,17 @@ set(SDL2_IMAGE_LIB_DIR "${SDL2_IMAGE_DIR}/lib")
 set(SDL2_MIXER_DIR "C:/Users/ASUS/CLionProjects/Pacman/SDL2_mixer-2.0.4/x86_64-w64-mingw32")
 set(SDL2_MIXER_INCLUDE_DIR "${SDL2_MIXER_DIR}/include")
 set(SDL2_MIXER_LIB_DIR "${SDL2_MIXER_DIR}/lib")
+set(SDL2_TTF_DIR "C:/Users/ASUS/CLionProjects/Pacman/SDL2_ttf-2.24.0/x86_64-w64-mingw32")
+set(SDL2_TTF_INCLUDE_DIR "${SDL2_TTF_DIR}/include")
+set(SDL2_TTF_LIB_DIR "${SDL2_TTF_DIR}/lib")
+
 
 include_directories(
         ${SDL2_INCLUDE_DIR}
         ${SDL2_INCLUDE_DIR}/SDL2
         ${SDL2_IMAGE_INCLUDE_DIR}
         ${SDL2_MIXER_INCLUDE_DIR}
+        ${SDL2_TTF_INCLUDE_DIR}
 )
 
 add_executable(Pacman main.cpp
@@ -41,7 +46,6 @@ add_executable(Pacman main.cpp
         src/Ghost.cpp
         include/Direction.h
         include/Pathfinder.h
-        src/Pathfinder.cpp
         src/Blinky.cpp
         src/Pinky.cpp
         include/GhostState.h
@@ -57,10 +61,12 @@ target_link_libraries(Pacman PRIVATE
         ${SDL2_LIB_DIR}/libSDL2.a
         ${SDL2_IMAGE_LIB_DIR}/libSDL2_image.a
         ${SDL2_MIXER_LIB_DIR}/libSDL2_mixer.a
+        ${SDL2_TTF_LIB_DIR}/libSDL2_ttf.a
         setupapi
         imm32
         version
         winmm
+        rpcrt4
 )
 
 target_link_options(Pacman PRIVATE -mwindows)
