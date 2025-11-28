@@ -1,8 +1,8 @@
 #include "../include/Inky.h"
 #include "../include/Map.h"
 
-Inky::Inky(int x, int y, int w, int h)
-        : Ghost(x, y, w, h) {
+Inky::Inky()
+        : Ghost(12, 14, 28, 28) {
     scatterCorner = {27,30};
 }
 

@@ -2,8 +2,8 @@
 #include "../include/Blinky.h"
 #include "../include/Map.h"
 
-Blinky::Blinky(int x, int y, int w, int h)
-        : Ghost(x, y, w, h) {
+Blinky::Blinky()
+        : Ghost(14, 10.5, 28, 28) {
     scatterCorner = {27,0};
     state = SCATTER;
 }

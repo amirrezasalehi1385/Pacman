@@ -9,7 +9,7 @@ void Map::spawnDots() {
     for (int y = 0; y < mapGrid.size(); ++y) {
         for (int x = 0; x < mapGrid[y].size(); ++x) {
             if (mapGrid[y][x] == 0) {
-                if (!(y >= 9 && y <= 22 && x >= 7 && x <= 20) && !(y == 14 && (x <= 5 || x >= 22))) {
+                if (!(y >= 9 && y <= 22 && x >= 7 && x <= 20) && !(y == 14 && (x <= 5 || x >= 22)) && !(x == 14 && y == 23) ) {
                     tileGrid[y][x] = 21;
                     emptyTiles.emplace_back(x,y);
                 }

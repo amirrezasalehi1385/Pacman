@@ -60,11 +60,12 @@ bool Game::init(const std::string& title, int w, int h) {
         return false;
     loadSounds();
     gameStartTime = SDL_GetTicks();
-    gameStartTime = SDL_GetTicks();
     modeStartTime = gameStartTime;
     cycleStarted = true;
     currentMode = SCATTER;
     cycleIndex = 0;
+    isReady = false;
+    readyStartTime = SDL_GetTicks();
 
     if (TTF_Init() != 0) {
         SDL_Log("TTF_Init Error: %s", TTF_GetError());
@@ -88,9 +89,9 @@ bool Game::init(const std::string& title, int w, int h) {
 
     pacman = new Pacman(13 * 16 + 3, 25 * 16 + 11, 26, 26);
     pacman->setWindowManager(&windowManager);
-    pacman->loadTextures(textureManager, "assets/Pacman/2.png","assets/Pacman/1.png", "assets/Pacman/0.png");
+    pacman->loadTextures(textureManager, "assets/Pacman/0.png","assets/Pacman/1.png", "assets/Pacman/2.png");
 
-    blinky = new Blinky(14, 12, 28, 28);
+    blinky = new Blinky();
     std::vector<std::string> blinkyTextures = {
             "assets/ghost/eyeUp.png",
             "assets/ghost/eyeDown.png",
@@ -108,7 +109,7 @@ bool Game::init(const std::string& title, int w, int h) {
 
     blinky->loadTargetTexture(windowManager.getRenderer(), "assets/blinky_target.png");
 
-    pinky = new Pinky(14, 14, 28, 28);
+    pinky = new Pinky();
     std::vector<std::string> pinkyTextures = {
             "assets/ghost/eyeUp.png",
             "assets/ghost/eyeDown.png",
@@ -126,7 +127,7 @@ bool Game::init(const std::string& title, int w, int h) {
     pinky->loadTextures(textureManager, pinkyTextures);
     pinky->loadTargetTexture(windowManager.getRenderer(), "assets/pinky_target.png");
 
-    inky = new Inky(12,14,28,28);
+    inky = new Inky();
     std::vector<std::string> InkyTextures = {
             "assets/ghost/eyeUp.png",
             "assets/ghost/eyeDown.png",
@@ -143,7 +144,7 @@ bool Game::init(const std::string& title, int w, int h) {
 
     inky->loadTextures(textureManager, InkyTextures);
     inky->loadTargetTexture(windowManager.getRenderer(), "assets/inky_target.png");
-    clyde = new Clyde(16,14,28,28);
+    clyde = new Clyde();
     std::vector<std::string> clydeTextures = {
             "assets/ghost/eyeUp.png",
             "assets/ghost/eyeDown.png",
@@ -195,7 +196,10 @@ void Game::resetPacmanPosition() {
     pacman->isAlive = true;
     currentDir = STOP;
     nextDir = STOP;
+    pacman->setDirection(STOP);
+    pacman->setNextDirection(STOP);
 }
+
 void Game::handlePacmanDeath() {
     windowManager.playSound("death");
 
@@ -216,7 +220,11 @@ void Game::handlePacmanDeath() {
     lives--;
 
     if(lives > 0) {
+
         SDL_Delay(500);
+        for(auto  g : ghosts){
+            g->reset();
+        }
         resetPacmanPosition();
 
         frightenedUntil = 0;
@@ -229,6 +237,8 @@ void Game::handlePacmanDeath() {
         pinky->endOfFrightening = false;
         inky->endOfFrightening = false;
         clyde->endOfFrightening = false;
+
+
     }
     else {
         quit();
@@ -277,19 +287,14 @@ void Game::render() {
 }
 void Game::renderScore() {
     if (!font) return;
-
-    SDL_Color color = {255, 255, 255, 255}; // سفید
+    SDL_Color color = {255, 255, 255, 255};
     std::string scoreText = "Score: " + std::to_string(getScore());
-
     SDL_Surface* surface = TTF_RenderText_Solid(font, scoreText.c_str(), color);
     if(!surface) return;
-
     SDL_Texture* texture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surface);
     SDL_FreeSurface(surface);
-
     SDL_Rect dstRect = {8, 8, 100, 20};
     SDL_RenderCopy(windowManager.getRenderer(), texture, nullptr, &dstRect);
-
     SDL_DestroyTexture(texture);
 }
 
@@ -297,10 +302,8 @@ void Game::renderScore() {
 void Game::run() {
     const int FPS = 144;
     const int frameDelay = 1000 / FPS;
-
     const float fixedDelta = 1.0f / 60.0f;
     float accumulator = 0;
-
     Uint32 lastTime = SDL_GetTicks();
 
     while(isRunning) {
@@ -308,18 +311,64 @@ void Game::run() {
         float delta = (now - lastTime) / 1000.0f;
         lastTime = now;
         accumulator += delta;
+
         handleEvents();
+
+        // همیشه آپدیت میشه
         while (accumulator >= fixedDelta) {
             update();
             accumulator -= fixedDelta;
         }
-        render();
-        int frameTime = SDL_GetTicks() - now;
-        if(frameDelay > frameTime) {
-            SDL_Delay(frameDelay - frameTime);
+
+        if(!isReady) {
+            if(SDL_GetTicks() - readyStartTime >= readyDuration) {
+                isReady = true;
+                blinky->readyToExit = true;
+                modeStartTime = SDL_GetTicks();
+                cycleStarted = true;
+            }
+
+            windowManager.clear();
+
+            if (backgroundTexture) {
+                SDL_Rect dst = {0, 0, 448, 576};
+                SDL_RenderCopy(windowManager.getRenderer(), backgroundTexture, nullptr, &dst);
+            }
+
+            gameMap->render();
+            pacman->render(windowManager.getRenderer());
+            blinky->render(windowManager.getRenderer());
+            pinky->render(windowManager.getRenderer());
+            inky->render(windowManager.getRenderer());
+            clyde->render(windowManager.getRenderer());
+            renderLives();
+            renderScore();
+
+            // متن READY
+            SDL_Color color = {255, 255, 0, 255};
+            std::string text = "READY!";
+            SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
+            if(surface) {
+                SDL_Texture* texture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surface);
+                SDL_FreeSurface(surface);
+
+                int texW, texH;
+                SDL_QueryTexture(texture, nullptr, nullptr, &texW, &texH);
+                SDL_Rect dstRect = { (448 - texW)/2, (576 - texH)/2 + 36, texW, texH };
+                SDL_RenderCopy(windowManager.getRenderer(), texture, nullptr, &dstRect);
+                SDL_DestroyTexture(texture);
+            }
+
+            windowManager.present();
+        }
+        else {
+            render();
         }
     }
 }
+// Game.cpp
+
+
 
 void Game::update() {
     setScore((pacman->getDotsEaten() * 10) + (pacman->getBigDotsEaten() * 50) );
@@ -328,12 +377,16 @@ void Game::update() {
         handlePacmanDeath();
         return;
     }
-    pacman->update();
-    pacman->move(gameMap, speed);
-    blinky->checkCollisionWithPacman(pacman);
-    pinky->checkCollisionWithPacman(pacman);
-    inky->checkCollisionWithPacman(pacman);
-    clyde->checkCollisionWithPacman(pacman);
+    if(isReady) {
+        pacman->update();
+        pacman->move(gameMap, speed);
+    }
+    if(isReady) {
+        blinky->checkCollisionWithPacman(pacman);
+        pinky->checkCollisionWithPacman(pacman);
+        inky->checkCollisionWithPacman(pacman);
+        clyde->checkCollisionWithPacman(pacman);
+    }
     if(pacman->ateBigDot) {
         pacman->ateBigDot = false;
         frightenedUntil = SDL_GetTicks() + frightenedTimes[currentFrightenedIndex];
@@ -396,7 +449,7 @@ void Game::update() {
             g->setMode(currentMode);
         }
     }
-    blinky->update(*pacman, *gameMap);
+    if(isReady)  blinky->update(*pacman, *gameMap);
     inky->update(*pacman, *blinky, *gameMap);
     pinky->update(*pacman, *gameMap);
     clyde->update(*pacman, *gameMap);

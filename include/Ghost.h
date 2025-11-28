@@ -14,7 +14,9 @@ public:
     bool readyToExit;
     bool ghostEaten;
     bool endOfFrightening;
-    Ghost(int x, int y, int w, int h);
+    float initialTileX;
+    float initialTileY;
+    Ghost(float initX, float initY, int w, int h);
 
     bool loadTextures(TextureManager* texManager, const std::vector<std::string>& paths);
 
@@ -25,7 +27,6 @@ public:
         windowManager = wm;
     }
     void setPosition(int x, int y);
-//    Direction bfsFindDirection(const Map& map, int startX, int startY, int targetX, int targetY);
     SDL_Point getCurrentTile() const;
     void setTarget(const SDL_Rect& targetRect);
     void setTargetTile(int tileX, int tileY);
@@ -42,8 +43,9 @@ public:
     void wait();
     GhostState getState() const { return state; }
     void setFrozen(bool val) { frozen = val; }
-
+    void reset();
 protected:
+    int w, h;
     SDL_Point targetTile;
     SDL_Point currentTile;
     Direction currentDirection = STOP;

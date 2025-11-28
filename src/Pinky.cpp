@@ -1,8 +1,8 @@
 #include "../include/Pinky.h"
 #include "../include/Map.h"
 
-Pinky::Pinky(int x, int y, int w, int h)
-        : Ghost(x, y, w, h) {
+Pinky::Pinky()
+        : Ghost(14, 14, 28, 28) {
     scatterCorner = {0,0};
 }
 

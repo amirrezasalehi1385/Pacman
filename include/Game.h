@@ -1,6 +1,7 @@
 #pragma once
 #include "WindowManager.h"
 #include "TextureManager.h"
+#include "Direction.h"
 #include "GhostManager.h"
 #include "Ghost.h"
 #include "Map.h"
@@ -12,11 +13,15 @@ class Game {
 public:
     Game();
     ~Game();
-
     bool init(const std::string& title, int w, int h);
+    bool isReady = false;
+    void showReadyScreen();
     void run();
     void quit();
     void handlePacmanDeath();
+    void resetGhostsPostion();
+    Uint32 readyStartTime = 0;
+    const Uint32 readyDuration = 4267;
     bool pacmanDied = false;
     bool showGameOver = false;
     Uint32 gameOverStartTime = 0;
@@ -36,7 +41,6 @@ public:
     }
 private:
     int score;
-    enum Direction { STOP, UP, DOWN, LEFT, RIGHT };
     Direction currentDir = STOP;
     std::vector<Uint32> cycleTimes = {7000, 20000,7000, 20000, 5000, 20000, 5000};
     std::vector<Uint32> frightenedTimes = {6000, 5000,4000, 3000};
@@ -46,7 +50,8 @@ private:
     Uint32 modeStartTime = 0;
     bool cycleStarted = false;
     Uint32 frightenedUntil = 0;
-    int currentFrightenedIndex = 0; // اضافه کردن این خط
+
+    int currentFrightenedIndex = 0;
     Uint32 gameStartTime;
     void handleEvents();
     void update();

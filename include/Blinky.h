@@ -3,6 +3,6 @@
 
 class Blinky : public Ghost {
 public:
-    Blinky(int x, int y, int w, int h);
+    Blinky();
     void update(const Pacman& pacman, const Map& map);
 };

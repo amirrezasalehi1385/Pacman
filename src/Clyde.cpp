@@ -1,8 +1,8 @@
 #include "../include/Clyde.h"
 #include "../include/Map.h"
 
-Clyde::Clyde(int x, int y, int w, int h)
-        : Ghost(x, y, w, h) {
+Clyde::Clyde()
+        : Ghost(16, 14, 28, 28) {
     scatterCorner = {0,30};
 }
 

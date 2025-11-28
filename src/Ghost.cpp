@@ -9,28 +9,28 @@
 #include <SDL2/SDL.h>
 
 
-Ghost::Ghost(int tileX, int tileY, int w, int h) : speed(1.5), pixelsMoved(0){
+Ghost::Ghost(float initX, float initY, int w, int h)
+        : initialTileX(initX), initialTileY(initY), w(w), h(h), pixelsMoved(0), speed(1.5)
+{
     endOfFrightening = false;
     canGotoGhostHouse = true;
     readyToExit = false;
     ghostEaten = false;
     state = WAIT;
-    int pixelX = tileX * 16 + 8 - w / 2;
-    int pixelY = tileY * 16 + 3*16 + 8 - h / 2;
+    int pixelX = initX * 16 + 8 - w/2;
+    int pixelY = initY * 16 + 3 * 16 + 8 - h/2;
     rect = {pixelX -8 , pixelY + 8, w, h};
     updateHitbox();
     targetTexture = nullptr;
-
-    currentTile = {tileX, tileY};
+    currentTile = {(int)initX, (int)initY};
     targetTile = currentTile;
     currentDirection = STOP;
 
-    printf("Ghost created at tile (%d,%d), pixel (%d,%d)\n",
-           tileX, tileY, pixelX, pixelY);
 }
 
+
 bool Ghost::checkCollisionWithPacman(Pacman* pacman) {
-    SDL_Rect pacHitbox = pacman->getHitbox(); // کپی hitbox
+    SDL_Rect pacHitbox = pacman->getHitbox();
     if(SDL_HasIntersection(&hitbox, &pacHitbox)) {
         if(state == FRIGHTENED) {
             ghostEaten = true;
@@ -43,6 +43,24 @@ bool Ghost::checkCollisionWithPacman(Pacman* pacman) {
 
 }
 
+void Ghost::reset() {
+    endOfFrightening = false;
+    canGotoGhostHouse = true;
+    readyToExit = false;
+    ghostEaten = false;
+    state = WAIT;
+    pixelsMoved = 0;
+    currentDirection = STOP;
+
+    // محاسبه درست مثل constructor
+    int pixelX = initialTileX * 16 + 8 - w/2;
+    int pixelY = initialTileY * 16 + 3 * 16 + 8 - h/2;
+    rect = {pixelX - 8, pixelY + 8, w, h};  // دقیقاً مثل constructor
+
+    updateHitbox();
+    currentTile = {(int)initialTileX, (int)initialTileY};
+    targetTile = currentTile;
+}
 
 void Ghost::wait() {
     const int tileSize = 16;
@@ -78,8 +96,7 @@ void Ghost::updateBodyAnimation() {
 
 
 void Ghost::update(const Map& map) {
-    if(frozen) return;  // اگر فریز شده، هیچ کاری نکند
-
+    if(frozen) return;
     switch(state) {
         case WAIT:
             wait();
@@ -487,12 +504,6 @@ void Ghost::updateHitbox(){
     hitbox.y = rect.y + (rect.h - hbSize) / 2;
 }
 
-void Ghost::setPosition(int x, int y)
-{
-    rect.x = x;
-    rect.y = y;
-    updateHitbox();
-}
 
 bool Ghost::loadTargetTexture(SDL_Renderer* renderer, const std::string& path) {
     SDL_Surface* surface = IMG_Load(path.c_str());

@@ -48,7 +48,7 @@ private:
     SDL_Rect hitbox;
     SDL_Texture* frames[3];
     WindowManager* windowManager = nullptr;
-    int frameIndex;
+    int frameIndex = 0;
     int frameDir;
     Uint32 lastTime;
     int dotsEaten;
