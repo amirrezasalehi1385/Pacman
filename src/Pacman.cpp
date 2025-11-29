@@ -1,7 +1,6 @@
-#include "../include/Pacman.h"
-#include "../include/WindowManager.h"
-#include "../include/TextureManager.h"
-#include "../include/Ghost.h"
+#include "Pacman.h"
+#include "TextureManager.h"
+#include "SoundManager.h"
 
 Pacman::Pacman(int x, int y, int w, int h)
         : frameIndex(0), frameDir(1), lastTime(SDL_GetTicks()), dotsEaten(0) {
@@ -29,19 +28,6 @@ void Pacman::update() {
         lastTime = currentTime;
     }
     if(!isAlive) return;
-//    if(isDying) {
-//        Uint32 now = SDL_GetTicks();
-//        if(now - deathStartTime >= deathFrameDelay) {
-//            deathFrame++;
-//            deathStartTime = now;
-//            if(deathFrame >= pacmanDeathTextures.size()) {
-//                isDying = false;
-//                if(onDeathAnimationFinished)
-//                    onDeathAnimationFinished();
-//            }
-//        }
-//        return; // حرکت Pacman رو نکن
-//    }
     updateHitbox();
 }
 
@@ -58,19 +44,7 @@ double Pacman::getAngle() const {
 void Pacman::render(SDL_Renderer* renderer) {
     SDL_Texture* tex = frames[frameIndex];
     double angle = getAngle();
-
     if(tex) SDL_RenderCopyEx(renderer, tex, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);
-//    if(isDying) {
-//        if(deathFrame < pacmanDeathTextures.size())
-//            SDL_RenderCopy(windowManager.getRenderer(), pacmanDeathTextures[deathFrame], nullptr, &rect);
-//    } else {
-//        SDL_Texture* tex = frames[frameIndex];
-//        double angle = getAngle();
-//        if(tex)
-//            SDL_RenderCopyEx(windowManager.getRenderer(), tex, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);
-//    }
-
-
 }
 
 
@@ -156,7 +130,7 @@ void Pacman::handleInput(const SDL_Event& event) {
         if(cell == 21) {
             setDotsEaten(dotsEaten + 1);
             cell = 0;
-            if(dotsEaten % 5 == 0)   windowManager->playSound("chomp");
+            if(dotsEaten % 5 == 0)   SoundManager::get().playOnce("chomp");
         } else if(cell == 22) {
             setBigDotsEaten(bigDotsEaten + 1);
             cell = 0;

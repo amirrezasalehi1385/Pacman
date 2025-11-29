@@ -14,7 +14,7 @@ private:
 
     std::unordered_map<std::string, Mix_Chunk*> sounds;
     std::unordered_map<std::string, Mix_Music*> musics;
-    std::unordered_map<std::string, int> soundChannels; // ذخیره channel number هر صدا
+    std::unordered_map<std::string, int> soundChannels;
 
 public:
     WindowManager();
@@ -24,17 +24,6 @@ public:
     void clear();
     void present();
     SDL_Renderer* getRenderer() const;
-
-    // Music
-    bool loadMusic(const std::string& id, const std::string& filePath);
-    void playMusic(const std::string& id, int loops = -1);
-    void stopMusic();
-
-    // Sound Effects
-    bool loadSound(const std::string& id, const std::string& filePath);
-    void playSound(const std::string& name, bool loop = false);
-    void stopSound(const std::string& name);
-    bool isSoundPlaying(const std::string& name);
 };
 
 #endif

@@ -1,6 +1,3 @@
-//
-// Created by AmirReza on 9/15/2025.
-//
 #include "../include/GhostManager.h"
 #include "../include/TextureManager.h"
 #include <cmath>

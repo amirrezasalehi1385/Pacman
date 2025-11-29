@@ -3,17 +3,17 @@ project(Pacman)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(SDL2_DIR "C:/Users/ASUS/CLionProjects/Pacman/SDL2/x86_64-w64-mingw32")
+set(SDL2_DIR "${PROJECT_SOURCE_DIR}/SDL2/x86_64-w64-mingw32")
 set(SDL2_INCLUDE_DIR "${SDL2_DIR}/include")
 set(SDL2_LIB_DIR "${SDL2_DIR}/lib")
 
-set(SDL2_IMAGE_DIR "C:/Users/ASUS/CLionProjects/Pacman/SDL2_image-2.8.8/x86_64-w64-mingw32")
+set(SDL2_IMAGE_DIR "${PROJECT_SOURCE_DIR}/SDL2_image-2.8.8/x86_64-w64-mingw32")
 set(SDL2_IMAGE_INCLUDE_DIR "${SDL2_IMAGE_DIR}/include")
 set(SDL2_IMAGE_LIB_DIR "${SDL2_IMAGE_DIR}/lib")
-set(SDL2_MIXER_DIR "C:/Users/ASUS/CLionProjects/Pacman/SDL2_mixer-2.0.4/x86_64-w64-mingw32")
+set(SDL2_MIXER_DIR "${PROJECT_SOURCE_DIR}/SDL2_mixer-2.0.4/x86_64-w64-mingw32")
 set(SDL2_MIXER_INCLUDE_DIR "${SDL2_MIXER_DIR}/include")
 set(SDL2_MIXER_LIB_DIR "${SDL2_MIXER_DIR}/lib")
-set(SDL2_TTF_DIR "C:/Users/ASUS/CLionProjects/Pacman/SDL2_ttf-2.24.0/x86_64-w64-mingw32")
+set(SDL2_TTF_DIR "${PROJECT_SOURCE_DIR}/SDL2_ttf-2.24.0/x86_64-w64-mingw32")
 set(SDL2_TTF_INCLUDE_DIR "${SDL2_TTF_DIR}/include")
 set(SDL2_TTF_LIB_DIR "${SDL2_TTF_DIR}/lib")
 
@@ -45,7 +45,6 @@ add_executable(Pacman main.cpp
         include/Clyde.h
         src/Ghost.cpp
         include/Direction.h
-        include/Pathfinder.h
         src/Blinky.cpp
         src/Pinky.cpp
         include/GhostState.h
@@ -53,6 +52,13 @@ add_executable(Pacman main.cpp
         src/Clyde.cpp
         include/GhostManager.h
         src/GhostManager.cpp
+        include/SoundManager.h
+        src/SoundManager.cpp
+        include/GameRules.h
+)
+
+target_include_directories(Pacman PRIVATE
+        ${PROJECT_SOURCE_DIR}/include
 )
 
 target_link_libraries(Pacman PRIVATE

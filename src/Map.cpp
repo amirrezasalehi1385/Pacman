@@ -1,5 +1,5 @@
-#include "../include/Map.h"
-#include "../include/TextureManager.h"
+#include "Map.h"
+#include "TextureManager.h"
 #include <random>
 #include <ctime>
 
@@ -34,37 +34,37 @@ Map::Map(TextureManager* texManager, SDL_Renderer* rend)
 {
     texturePaths = {
             "",
-            "assets/walls2/1.png",
-            "assets/walls2/2.png",
-            "assets/walls2/3.png",
-            "assets/walls2/4.png",
-            "assets/walls2/5.png",
-            "assets/walls2/6.png",
-            "assets/walls2/7.png",
-            "assets/walls2/8.png",
-            "assets/walls2/9.png",
-            "assets/walls2/10.png",
-            "assets/walls2/11.png",
-            "assets/walls2/12.png",
-            "assets/walls2/13.png",
-            "assets/walls2/14.png",
-            "assets/walls2/15.png",
-            "assets/walls2/16.png",
-            "assets/walls2/17.png",
-            "assets/walls2/18.png",
-            "assets/walls2/19.png",
-            "assets/walls2/20.png",
-            "assets/walls2/21.png",
-            "assets/walls2/22.png",
-            "assets/walls2/23.png",
-            "assets/walls2/24.png",
-            "assets/walls2/25.png",
-            "assets/walls2/26.png",
-            "assets/walls2/27.png",
-            "assets/walls2/28.png",
-            "assets/walls2/29.png",
-            "assets/walls2/30.png",
-            "assets/walls2/31.png"
+            "assets/walls/1.png",
+            "assets/walls/2.png",
+            "assets/walls/3.png",
+            "assets/walls/4.png",
+            "assets/walls/5.png",
+            "assets/walls/6.png",
+            "assets/walls/7.png",
+            "assets/walls/8.png",
+            "assets/walls/9.png",
+            "assets/walls/10.png",
+            "assets/walls/11.png",
+            "assets/walls/12.png",
+            "assets/walls/13.png",
+            "assets/walls/14.png",
+            "assets/walls/15.png",
+            "assets/walls/16.png",
+            "assets/walls/17.png",
+            "assets/walls/18.png",
+            "assets/walls/19.png",
+            "assets/walls/20.png",
+            "assets/walls/21.png",
+            "assets/walls/22.png",
+            "assets/walls/23.png",
+            "assets/walls/24.png",
+            "assets/walls/25.png",
+            "assets/walls/26.png",
+            "assets/walls/27.png",
+            "assets/walls/28.png",
+            "assets/walls/29.png",
+            "assets/walls/30.png",
+            "assets/walls/31.png"
     };
 
     for(auto& path : texturePaths) {

@@ -1,6 +1,5 @@
 
-#include "../include/Blinky.h"
-#include "../include/Map.h"
+#include "Blinky.h"
 
 Blinky::Blinky()
         : Ghost(14, 10.5, 28, 28) {

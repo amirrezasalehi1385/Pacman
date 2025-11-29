@@ -1,5 +1,4 @@
-#include "../include/Clyde.h"
-#include "../include/Map.h"
+#include "Clyde.h"
 
 Clyde::Clyde()
         : Ghost(16, 14, 28, 28) {

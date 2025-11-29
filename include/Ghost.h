@@ -5,7 +5,6 @@
 #include "Direction.h"
 #include "Pacman.h"
 #include "GhostState.h"
-#include "GhostManager.h"
 
 class Map;
 class Ghost {
@@ -19,14 +18,28 @@ public:
     bool returningSoundPlaying = false;
     Ghost(float initX, float initY, int w, int h);
     bool ghostInGhostHouse();
+    float posX, posY;       // موقعیت واقعی روی صفحه
+    float pixelsMoved;      // مقدار دقیق حرکت در پیکسل
+    float speed;            // سرعت اعشاری
     bool loadTextures(TextureManager* texManager, const std::vector<std::string>& paths);
-
     bool checkCollisionWithPacman(Pacman* pacman);
     void update(const Map& map);
     void render(SDL_Renderer* renderer);
     void setWindowManager(WindowManager* wm) {
         windowManager = wm;
     }
+
+    void loadScoreTextures(TextureManager* textureManager,
+                           const std::string& score200Path,
+                           const std::string& score400Path,
+                           const std::string& score800Path,
+                           const std::string& score1600Path);
+
+    void startShowingScore(int score);
+    bool isShowingScore() const { return showingScore; }
+    void updateScoreDisplay();
+    void renderScore(SDL_Renderer* renderer);
+
     void setPosition(int x, int y);
     SDL_Point getCurrentTile() const;
     void setTarget(const SDL_Rect& targetRect);
@@ -47,6 +60,12 @@ public:
     GhostState getState() const { return state; }
     void setFrozen(bool val) { frozen = val; }
     void reset();
+    bool scoreBeingDisplayed = false;  // نشان‌دهنده اینکه در حال نمایش امتیاز است
+    bool showingScore;
+    Uint32 scoreDisplayStartTime;
+    int scoreDisplayDuration;
+    int currentScoreValue;
+    int scoreValue = 200;
 protected:
     int w, h;
     SDL_Point targetTile;
@@ -56,12 +75,17 @@ protected:
     GhostState state = WAIT;
 
 private:
+    SDL_Texture* scoreTexture200;
+    SDL_Texture* scoreTexture400;
+    SDL_Texture* scoreTexture800;
+    SDL_Texture* scoreTexture1600;
+
+
+
     const SDL_Rect ghostHouse = {11, 16, 8, 5};
-    int pixelsMoved = 0;
     SDL_Rect eyeRect;
     SDL_Texture* eyeTex;
     SDL_Rect hitbox;
-    int speed = 2;
     SDL_Texture* bodyTex1;
     SDL_Texture* bodyTex2;
     SDL_Texture* frightenedTex;

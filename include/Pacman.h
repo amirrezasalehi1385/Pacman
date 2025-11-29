@@ -39,14 +39,14 @@ public:
     SDL_Point getTile() const;
     bool ateBigDot = false;
     std::function<void()> onDeathAnimationFinished;
-    SDL_Rect rect;
+    SDL_Rect rect{};
     bool isAlive = true;
-
+    bool visible = true;
 private:
     Direction currentDir = STOP;
     Direction nextDir = STOP;
-    SDL_Rect hitbox;
-    SDL_Texture* frames[3];
+    SDL_Rect hitbox{};
+    SDL_Texture* frames[3]{};
     WindowManager* windowManager = nullptr;
     int frameIndex = 0;
     int frameDir;

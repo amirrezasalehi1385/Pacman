@@ -1,5 +1,4 @@
-#include "../include/Pinky.h"
-#include "../include/Map.h"
+#include "Pinky.h"
 
 Pinky::Pinky()
         : Ghost(14, 14, 28, 28) {

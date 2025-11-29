@@ -1,10 +1,11 @@
-#include "../include/Game.h"
+#include "Game.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include "../include/Blinky.h"
-#include "../include/Pinky.h"
-#include "../include/Inky.h"
-#include "../include/Clyde.h"
+#include "Blinky.h"
+#include "Pinky.h"
+#include "Inky.h"
+#include "Clyde.h"
+#include "SoundManager.h"
 #include <SDL2/SDL_ttf.h>
 
 
@@ -48,14 +49,15 @@ Game::~Game() {
 
 
 void Game::loadSounds() {
-        windowManager.loadSound("chomp", "assets/Sounds/pacman_chomp.wav");
-        windowManager.loadSound("frightened", "assets/Sounds/pacman-ghostfrightened.wav");
-        windowManager.loadSound("eaten", "assets/Sounds/pacman_eatghost.wav");
-        windowManager.loadSound("death", "assets/Sounds/pacman_death.wav");
-        windowManager.loadSound("beginning", "assets/Sounds/pacman_beginning.wav");
-        windowManager.loadSound("returningToHouse" , "assets/Sounds/pacman-ghostRenturnToHome.wav");
-        windowManager.loadSound("siren", "assets/Sounds/pacman-ghostSiren.wav");
-};
+    // فقط از SoundManager استفاده کن، windowManager رو حذف کن
+    SoundManager::get().loadSound("chomp", "assets/Sounds/pacman_chomp.wav");
+    SoundManager::get().loadSound("frightened", "assets/Sounds/pacman-ghostfrightened.wav");
+    SoundManager::get().loadSound("eaten", "assets/Sounds/pacman_eatghost.wav");
+    SoundManager::get().loadSound("death", "assets/Sounds/pacman_death.wav");
+    SoundManager::get().loadSound("beginning", "assets/Sounds/pacman_beginning.wav");
+    SoundManager::get().loadSound("returningToHouse", "assets/Sounds/pacman-ghostRenturnToHome.wav");
+    SoundManager::get().loadSound("siren", "assets/Sounds/pacman-ghostSiren.wav");
+}
 bool Game::init(const std::string& title, int w, int h) {
     if(!windowManager.init(title.c_str(), w, h))
         return false;
@@ -79,11 +81,10 @@ bool Game::init(const std::string& title, int w, int h) {
         return false;
     }
 
-
-    windowManager.playSound("beginning");
+    SoundManager::get().playOnce("beginning");
     textureManager = new TextureManager(windowManager.getRenderer());
 
-//    backgroundTexture = textureManager->loadTexture("assets/map/background.png");
+    backgroundTexture = textureManager->loadTexture("assets/map/background.png");
 
     gameMap = new Map(textureManager, windowManager.getRenderer());
     gameMap->loadLevel1();
@@ -103,7 +104,12 @@ bool Game::init(const std::string& title, int w, int h) {
             "assets/ghost/frightened.png",
             "assets/ghost/frightened2.png",
             "assets/ghost/endFrightening.png",
-            "assets/ghost/endFrightening2.png"
+            "assets/ghost/endFrightening2.png",
+            "assets/scores/200.png",
+            "assets/scores/400.png",
+            "assets/scores/800.png",
+            "assets/scores/1600.png"
+
     };
     blinky->setWindowManager(&windowManager);
     blinky->loadTextures(textureManager, blinkyTextures);
@@ -120,7 +126,11 @@ bool Game::init(const std::string& title, int w, int h) {
             "assets/ghost/frightened.png",
             "assets/ghost/frightened2.png",
             "assets/ghost/endFrightening.png",
-            "assets/ghost/endFrightening2.png"
+            "assets/ghost/endFrightening2.png",
+            "assets/scores/200.png",
+            "assets/scores/400.png",
+            "assets/scores/800.png",
+            "assets/scores/1600.png"
     };
     pinky->setWindowManager(&windowManager);
 
@@ -137,7 +147,11 @@ bool Game::init(const std::string& title, int w, int h) {
             "assets/ghost/frightened.png",
             "assets/ghost/frightened2.png",
             "assets/ghost/endFrightening.png",
-            "assets/ghost/endFrightening2.png"
+            "assets/ghost/endFrightening2.png",
+            "assets/scores/200.png",
+            "assets/scores/400.png",
+            "assets/scores/800.png",
+            "assets/scores/1600.png"
     };
     inky->setWindowManager(&windowManager);
 
@@ -153,12 +167,41 @@ bool Game::init(const std::string& title, int w, int h) {
             "assets/ghost/frightened.png",
             "assets/ghost/frightened2.png",
             "assets/ghost/endFrightening.png",
-            "assets/ghost/endFrightening2.png"
+            "assets/ghost/endFrightening2.png",
+            "assets/scores/200.png",
+            "assets/scores/400.png",
+            "assets/scores/800.png",
+            "assets/scores/1600.png"
 
     };
     clyde->setWindowManager(&windowManager);
 
     clyde->loadTextures(textureManager, clydeTextures);
+
+    blinky->loadScoreTextures(textureManager,
+                              "assets/scores/200.png",
+                              "assets/scores/400.png",
+                              "assets/scores/800.png",
+                              "assets/scores/1600.png");
+
+    pinky->loadScoreTextures(textureManager,
+                             "assets/scores/200.png",
+                             "assets/scores/400.png",
+                             "assets/scores/800.png",
+                             "assets/scores/1600.png");
+
+    inky->loadScoreTextures(textureManager,
+                            "assets/scores/200.png",
+                            "assets/scores/400.png",
+                            "assets/scores/800.png",
+                            "assets/scores/1600.png");
+
+    clyde->loadScoreTextures(textureManager,
+                             "assets/scores/200.png",
+                             "assets/scores/400.png",
+                             "assets/scores/800.png",
+                             "assets/scores/1600.png");
+
 
 //    loadTargetTexture();
     ghosts.push_back(blinky);
@@ -204,10 +247,13 @@ void Game::resetPacmanPosition() {
     pacman->setDirection(STOP);
     pacman->setNextDirection(STOP);
 }
-
 void Game::handlePacmanDeath() {
-    windowManager.stopSound("siren"); // قطع صدای سایرن
-    windowManager.playSound("death");
+    SoundManager::get().stop("siren");
+    SoundManager::get().stop("frightened");
+    SoundManager::get().stop("returningToHouse");
+
+    SoundManager::get().playOnce("death");
+
     isReady = false;
     readyStartTime = SDL_GetTicks();
 
@@ -238,21 +284,22 @@ void Game::handlePacmanDeath() {
     lives--;
 
     if(lives > 0) {
-
         SDL_Delay(500);
-
         frightenedUntil = 0;
-        if(blinky->getState() == FRIGHTENED) blinky->setMode(currentMode);
-        if(pinky->getState() == FRIGHTENED) pinky->setMode(currentMode);
-        if(inky->getState() == FRIGHTENED) inky->setMode(currentMode);
-        if(clyde->getState() == FRIGHTENED) clyde->setMode(currentMode);
 
-        blinky->endOfFrightening = false;
-        pinky->endOfFrightening = false;
-        inky->endOfFrightening = false;
-        clyde->endOfFrightening = false;
+        for(auto g : ghosts) {
+            if(g->getState() == EATEN) {
+                g->setState(SCATTER);
+                g->ghostEaten = false;
+                g->returningSoundPlaying = false;
+            }
+            else if(g->getState() == FRIGHTENED) {
+                g->setMode(currentMode);
+            }
+            g->endOfFrightening = false;
+        }
 
-        for(auto g : ghosts){
+        for(auto g : ghosts) {
             g->reset();
         }
 
@@ -269,11 +316,11 @@ void Game::handlePacmanDeath() {
         clyde->readyToExit = false;
 
         resetPacmanPosition();
-    }else {
+        SoundManager::get().playOnce("beginning");
+    } else {
         quit();
     }
 }
-
 
 void Game::renderLives() {
     int startX = 2;
@@ -327,7 +374,6 @@ void Game::renderScore() {
     SDL_DestroyTexture(texture);
 }
 
-
 void Game::run() {
     const int FPS = 60;
     const int frameDelay = 1000 / FPS;
@@ -349,8 +395,9 @@ void Game::run() {
         }
 
         if(!isReady) {
-            if(windowManager.isSoundPlaying("siren")) {
-                windowManager.stopSound("siren");
+            // صدای siren رو متوقف کن
+            if(SoundManager::get().isPlaying("siren")) {
+                SoundManager::get().stop("siren");
             }
 
             if(SDL_GetTicks() - readyStartTime >= readyDuration) {
@@ -358,15 +405,15 @@ void Game::run() {
                 blinky->readyToExit = true;
                 modeStartTime = SDL_GetTicks();
                 cycleStarted = true;
-                windowManager.playSound("siren", true);
+                SoundManager::get().play("siren", -1);  // loop بی‌نهایت
             }
-            windowManager.clear();
 
+            // ... بقیه رندر کدها ...
+            windowManager.clear();
             if (backgroundTexture) {
                 SDL_Rect dst = {0, 0, 448, 576};
                 SDL_RenderCopy(windowManager.getRenderer(), backgroundTexture, nullptr, &dst);
             }
-
             gameMap->render();
             pacman->render(windowManager.getRenderer());
             blinky->render(windowManager.getRenderer());
@@ -376,21 +423,18 @@ void Game::run() {
             renderLives();
             renderScore();
 
-            // متن READY
             SDL_Color color = {255, 255, 0, 255};
             std::string text = "READY!";
             SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
             if(surface) {
                 SDL_Texture* texture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surface);
                 SDL_FreeSurface(surface);
-
                 int texW, texH;
                 SDL_QueryTexture(texture, nullptr, nullptr, &texW, &texH);
                 SDL_Rect dstRect = { (448 - texW)/2, (576 - texH)/2 + 36, texW, texH };
                 SDL_RenderCopy(windowManager.getRenderer(), texture, nullptr, &dstRect);
                 SDL_DestroyTexture(texture);
             }
-
             windowManager.present();
         }
         else {
@@ -398,10 +442,8 @@ void Game::run() {
         }
     }
 }
-
-
 void Game::update() {
-    setScore((pacman->getDotsEaten() * 10) + (pacman->getBigDotsEaten() * 50));
+    setScore((pacman->getDotsEaten() * GameRules::SMALL_DOTS_SCORE) + (pacman->getBigDotsEaten() * GameRules::BIG_DOTS_SCORE));
     Uint32 now = SDL_GetTicks();
 
     if (!pacman->isAlive) {
@@ -409,85 +451,115 @@ void Game::update() {
         return;
     }
 
-    if(isReady) {
+    if (isReady) {
         pacman->update();
-        pacman->move(gameMap, speed);
+        pacman->move(gameMap, GameRules::PACMAN_SPEED);
     }
 
-    if(isReady) {
-        blinky->checkCollisionWithPacman(pacman);
-        pinky->checkCollisionWithPacman(pacman);
-        inky->checkCollisionWithPacman(pacman);
-        clyde->checkCollisionWithPacman(pacman);
-    }
-
-    if(pacman->ateBigDot) {
+    // ========== Big Dot خورده شد ==========
+    if (pacman->ateBigDot) {
         pacman->ateBigDot = false;
+        ghostsEatenInThisFrightened = 0;
+
         frightenedUntil = SDL_GetTicks() + frightenedTimes[currentFrightenedIndex];
-        if(SDL_GetTicks() < frightenedUntil) {
-            windowManager.playSound("frightened");
-        }
-        for(auto g : ghosts) {
-            if(g->getState() != WAIT && g->getState() != EXIT && g->getState() != EATEN) {
+
+        // صدای siren رو قطع و frightened رو پخش کن
+        SoundManager::get().stop("siren");
+        SoundManager::get().play("frightened", -1);
+
+        for (auto g : ghosts) {
+            if (g->getState() != WAIT && g->getState() != EXIT && g->getState() != EATEN) {
                 g->setState(FRIGHTENED);
                 g->endOfFrightening = false;
             }
         }
-        if(currentFrightenedIndex < frightenedTimes.size() - 1) {
+
+        if (currentFrightenedIndex < frightenedTimes.size() - 1) {
             currentFrightenedIndex++;
         }
     }
 
-    for(auto g : ghosts) {
-        if(g->ghostEaten && g->getState() == FRIGHTENED){
-            g->setState(EATEN);
-            windowManager.playSound("eaten");
-            g->ghostEaten = false;
+    // ========== برخورد با روح‌ها ==========
+    if (isReady) {
+        for (auto g : ghosts) {
+            if (g->checkCollisionWithPacman(pacman)) {
+                if (g->getState() == FRIGHTENED && !g->isShowingScore()) {
+                    int scoreValue;
+                    switch (ghostsEatenInThisFrightened) {
+                        case 0: scoreValue = 200;   break;
+                        case 1: scoreValue = 400;  break;
+                        case 2: scoreValue = 800; break;
+                        case 3: scoreValue = 1600; break;
+                        default: scoreValue = 200; break;
+                    }
+                    g->startShowingScore(scoreValue);
+                    ghostsEatenInThisFrightened++;
+                    SoundManager::get().playOnce("eaten");
+                }
+            }
         }
     }
 
-    for(auto g : ghosts) {
-        if(!g->ghostInGhostHouse() && g->getState() == EATEN) {
-            if(!g->returningSoundPlaying) {
-                windowManager.playSound("returningToHouse");
-                g->returningSoundPlaying = true;
-            }
-        }
-        else if(g->ghostInGhostHouse() && g->getState() == EATEN) {
-            if(g->returningSoundPlaying) {
-                windowManager.stopSound("returningToHouse");
-                g->returningSoundPlaying = false;
-            }
-        }
+    for (auto g : ghosts) {
+        g->updateScoreDisplay();
     }
 
+    // ========== پایان Frightened Mode ==========
     if (frightenedUntil != 0) {
-        if(windowManager.isSoundPlaying("siren")) {
-            windowManager.stopSound("siren");
-        }
-
         Uint32 remaining = frightenedUntil - now;
 
         if (remaining <= 2000) {
-            for(auto g : ghosts) {
+            for (auto g : ghosts) {
                 g->endOfFrightening = true;
             }
         }
 
         if (remaining == 0 || now > frightenedUntil) {
             frightenedUntil = 0;
-            for(auto g : ghosts) {
-                if(g->getState() == FRIGHTENED) g->setMode(currentMode);
+            ghostsEatenInThisFrightened = 0;
+
+            // صدای frightened رو متوقف کن
+            SoundManager::get().stop("frightened");
+
+            for (auto g : ghosts) {
+                if (g->getState() == FRIGHTENED) {
+                    g->setMode(currentMode);
+                }
                 g->endOfFrightening = false;
             }
         }
     }
 
+    // ========== صدای بازگشت روح‌ها ==========
+    bool anyGhostReturning = false;
+    for (auto g : ghosts) {
+        if (g->canGotoGhostHouse && g->getState() == EATEN) {
+            anyGhostReturning = true;
+            if (!g->returningSoundPlaying) {
+                SoundManager::get().play("returningToHouse", -1);
+                g->returningSoundPlaying = true;
+            }
+            break; // فقط یکبار پخش کن
+        }
+    }
+
+// اگر هیچ روحی در حال بازگشت نیست، صدا رو قطع کن
+    if (!anyGhostReturning) {
+        for (auto g : ghosts) {
+            if (g->returningSoundPlaying) {
+                SoundManager::get().stop("returningToHouse");
+                g->returningSoundPlaying = false;
+            }
+        }
+    }
+
+
+    // ========== صدای Siren ==========
     bool shouldPlaySiren = false;
-    if(isReady && frightenedUntil == 0) {
+    if (isReady && frightenedUntil == 0) {
         bool anyGhostEaten = false;
-        for(auto g : ghosts) {
-            if(g->getState() == EATEN) {
+        for (auto g : ghosts) {
+            if (g->getState() == EATEN) {
                 anyGhostEaten = true;
                 break;
             }
@@ -495,36 +567,37 @@ void Game::update() {
         shouldPlaySiren = !anyGhostEaten;
     }
 
-    if(shouldPlaySiren) {
-        if(!windowManager.isSoundPlaying("siren")) {
-            windowManager.playSound("siren", true);
+    if (shouldPlaySiren) {
+        if (!SoundManager::get().isPlaying("siren")) {
+            SoundManager::get().play("siren", -1);
         }
     } else {
-        if(windowManager.isSoundPlaying("siren")) {
-            windowManager.stopSound("siren");
+        if (SoundManager::get().isPlaying("siren")) {
+            SoundManager::get().stop("siren");
         }
     }
 
+    // ========== باقی update ==========
     int pelletsEaten = pacman->getDotsEaten();
-    if(pelletsEaten >= 10 && !inky->readyToExit) inky->readyToExit = true;
-    if(pelletsEaten >= 20 && !pinky->readyToExit) pinky->readyToExit = true;
-    if(pelletsEaten >= 30 && !clyde->readyToExit) clyde->readyToExit = true;
+    if (pelletsEaten >= 10 && !inky->readyToExit) inky->readyToExit = true;
+    if (pelletsEaten >= 20 && !pinky->readyToExit) pinky->readyToExit = true;
+    if (pelletsEaten >= 30 && !clyde->readyToExit) clyde->readyToExit = true;
 
-    if(cycleStarted && cycleIndex < cycleTimes.size()) {
-        if(now - modeStartTime >= cycleTimes[cycleIndex]) {
+    if (cycleStarted && cycleIndex < cycleTimes.size()) {
+        if (now - modeStartTime >= cycleTimes[cycleIndex]) {
             currentMode = (currentMode == SCATTER) ? CHASE : SCATTER;
             modeStartTime = now;
             cycleIndex++;
         }
     }
 
-    for(auto g : ghosts) {
-        if(g->getState() == SCATTER || g->getState() == CHASE){
+    for (auto g : ghosts) {
+        if (g->getState() == SCATTER || g->getState() == CHASE) {
             g->setMode(currentMode);
         }
     }
 
-    if(isReady) {
+    if (isReady) {
         blinky->update(*pacman, *gameMap);
         inky->update(*pacman, *blinky, *gameMap);
         pinky->update(*pacman, *gameMap);

@@ -8,6 +8,7 @@
 #include "Pacman.h"
 #include <string>
 #include <SDL2/SDL_ttf.h>
+#include "GameRules.h"
 
 class Game {
 public:
@@ -15,17 +16,12 @@ public:
     ~Game();
     bool init(const std::string& title, int w, int h);
     bool isReady = false;
-    void showReadyScreen();
     void run();
     void quit();
     void handlePacmanDeath();
-    void resetGhostsPostion();
     void loadTargetTexture();
     Uint32 readyStartTime = 0;
     const Uint32 readyDuration = 4267;
-    bool pacmanDied = false;
-    bool showGameOver = false;
-    Uint32 gameOverStartTime = 0;
     TTF_Font* font = nullptr;
     int lives = 3;
     std::vector<SDL_Texture*> livesTextures;
@@ -40,11 +36,14 @@ public:
     void setScore(int s){
         score = s;
     }
+    int ghostsEatenInThisFrightened = 0;
+
 private:
     int score;
+
     Direction currentDir = STOP;
-    std::vector<Uint32> cycleTimes = {7000, 20000,7000, 20000, 5000, 20000, 5000};
-    std::vector<Uint32> frightenedTimes = {6000, 5000,4000, 3000};
+    std::array<Uint32, 7> cycleTimes = GameRules::GHOST_CYCLES;
+    std::array<Uint32, 4> frightenedTimes = GameRules::FRIGHTENED_TIMES;
     std::vector<Ghost*> ghosts;
     GhostState currentMode = SCATTER;
     int cycleIndex = 0;
@@ -58,7 +57,6 @@ private:
     void update();
     void render();
     bool isRunning = false;
-    int speed = 2;
     WindowManager windowManager;
     TextureManager* textureManager;
     Map* gameMap;

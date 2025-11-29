@@ -1,5 +1,4 @@
-#include "../include/Inky.h"
-#include "../include/Map.h"
+#include "Inky.h"
 
 Inky::Inky()
         : Ghost(12, 14, 28, 28) {
