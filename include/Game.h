@@ -20,6 +20,7 @@ public:
     void quit();
     void handlePacmanDeath();
     void resetGhostsPostion();
+    void loadTargetTexture();
     Uint32 readyStartTime = 0;
     const Uint32 readyDuration = 4267;
     bool pacmanDied = false;

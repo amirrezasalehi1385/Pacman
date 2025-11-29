@@ -10,7 +10,7 @@
 
 
 Ghost::Ghost(float initX, float initY, int w, int h)
-        : initialTileX(initX), initialTileY(initY), w(w), h(h), pixelsMoved(0), speed(1.5)
+        : initialTileX(initX), initialTileY(initY), w(w), h(h), pixelsMoved(0), speed(1)
 {
     endOfFrightening = false;
     canGotoGhostHouse = true;
@@ -25,9 +25,81 @@ Ghost::Ghost(float initX, float initY, int w, int h)
     currentTile = {(int)initX, (int)initY};
     targetTile = currentTile;
     currentDirection = STOP;
+//    scoreTexture200 = nullptr;
+//    scoreTexture400 = nullptr;
+//    scoreTexture800 = nullptr;
+//    scoreTexture1600 = nullptr;
+//    showingScore = false;
+//    scoreDisplayDuration = 1000; // 1 ثانیه
+//    currentScoreValue = 0;
 
 }
+//void Ghost::loadScoreTextures(TextureManager* textureManager,
+//                              const std::string& score200Path,
+//                              const std::string& score400Path,
+//                              const std::string& score800Path,
+//                              const std::string& score1600Path) {
+//    scoreTexture200 = textureManager->loadTexture(score200Path);
+//    scoreTexture400 = textureManager->loadTexture(score400Path);
+//    scoreTexture800 = textureManager->loadTexture(score800Path);
+//    scoreTexture1600 = textureManager->loadTexture(score1600Path);
+//}
+//
+//void Ghost::startShowingScore(int score) {
+//    showingScore = true;
+//    scoreDisplayStartTime = SDL_GetTicks();
+//    currentScoreValue = score;
+//}
+//
+//void Ghost::updateScoreDisplay() {
+//    if(showingScore) {
+//        Uint32 now = SDL_GetTicks();
+//        if(now - scoreDisplayStartTime >= scoreDisplayDuration) {
+//            showingScore = false;
+//            // بعد از نمایش امتیاز، وضعیت به EATEN تغییر می‌کند
+//            setState(EATEN);
+//        }
+//    }
+//}
+//
+//void Ghost::renderScore(SDL_Renderer* renderer) {
+//    if(!showingScore) return;
+//
+//    SDL_Texture* scoreTex = nullptr;
+//    switch(currentScoreValue) {
+//        case 200:  scoreTex = scoreTexture200;  break;
+//        case 400:  scoreTex = scoreTexture400;  break;
+//        case 800:  scoreTex = scoreTexture800;  break;
+//        case 1600: scoreTex = scoreTexture1600; break;
+//    }
+//
+//    if(scoreTex) {
+//        SDL_Rect dstRect = rect;
+//        SDL_RenderCopy(renderer, scoreTex, nullptr, &dstRect);
+//    }
+//}
 
+bool Ghost::ghostInGhostHouse() {
+    const SDL_Rect ghostHouseTiles = {11, 16, 8, 5};
+    const int tileSize = 16;
+
+    SDL_Rect ghostHouse = {
+            ghostHouseTiles.x * tileSize,
+            ghostHouseTiles.y * tileSize,
+            ghostHouseTiles.w * tileSize,
+            ghostHouseTiles.h * tileSize
+    };
+
+    SDL_Rect ghostRect = rect;
+
+    bool inside =
+            ghostRect.x + ghostRect.w > ghostHouse.x &&
+            ghostRect.x < ghostHouse.x + ghostHouse.w &&
+            ghostRect.y + ghostRect.h > ghostHouse.y &&
+            ghostRect.y < ghostHouse.y + ghostHouse.h;
+
+    return inside;
+}
 
 bool Ghost::checkCollisionWithPacman(Pacman* pacman) {
     SDL_Rect pacHitbox = pacman->getHitbox();
@@ -51,11 +123,10 @@ void Ghost::reset() {
     state = WAIT;
     pixelsMoved = 0;
     currentDirection = STOP;
-
-    // محاسبه درست مثل constructor
+    speed = 1;
     int pixelX = initialTileX * 16 + 8 - w/2;
     int pixelY = initialTileY * 16 + 3 * 16 + 8 - h/2;
-    rect = {pixelX - 8, pixelY + 8, w, h};  // دقیقاً مثل constructor
+    rect = {pixelX - 8, pixelY + 8, w, h};
 
     updateHitbox();
     currentTile = {(int)initialTileX, (int)initialTileY};
@@ -112,6 +183,7 @@ void Ghost::update(const Map& map) {
             updateChaseScatter(map);
             break;
         case FRIGHTENED:
+            speed = 1;
             canGotoGhostHouse = false;
             updateFrightened(map);
             break;
@@ -120,7 +192,7 @@ void Ghost::update(const Map& map) {
             canGotoGhostHouse = true;
             updateChaseScatter(map);
             if (currentTile.x == 13 && currentTile.y == 14) {
-                speed = 1.5;
+                speed = 1;
                 setMode(EXIT);
             }
     }
@@ -138,7 +210,7 @@ void Ghost::getOutOfHouse(const Map& map) {
     const int offsetX = -8;
 
     if (pixelsMoved == 0) {
-        int rawTileX = (rect.x + 8 - offsetX) / tileSize; // توجه: برای collision، offset برگردونده شد
+        int rawTileX = (rect.x + 8 - offsetX) / tileSize;
         currentTile.x = ((rawTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
         currentTile.y = (rect.y + 8 - 3 * tileSize) / tileSize;
 
@@ -148,7 +220,6 @@ void Ghost::getOutOfHouse(const Map& map) {
         else if (currentTile.x > exitTileX) nextDir = LEFT;
         else if (currentTile.y > exitTileY) nextDir = UP;
         else if (currentTile.y == exitTileY) {
-            printf("Ghost exited house at tile (%d,%d)\n", currentTile.x, currentTile.y);
             state = SCATTER;
             pixelsMoved = 0;
             currentDirection = LEFT;
@@ -207,7 +278,7 @@ void Ghost::getOutOfHouse(const Map& map) {
         int newTileX = ((rawNewTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
         int newTileY = (rect.y + 8 - 3 * tileSize) / tileSize;
 
-        rect.x = newTileX * tileSize + 8 - rect.w / 2 + offsetX; // اعمال offset به پوزیشن واقعی
+        rect.x = newTileX * tileSize + 8 - rect.w / 2 + offsetX;
         rect.y = newTileY * tileSize + 3 * tileSize + 8 - rect.h / 2;
 
         currentTile.x = newTileX;
@@ -222,7 +293,7 @@ void Ghost::getOutOfHouse(const Map& map) {
 
 
 bool Ghost::loadTextures(TextureManager* texManager, const std::vector<std::string>& paths) {
-    if(paths.size() < 7) return false;
+    if(paths.size() < 10) return false; // برگشت به 10 تکسچر
 
     eyeUp    = texManager->loadTexture(paths[0]);
     eyeDown  = texManager->loadTexture(paths[1]);
@@ -234,6 +305,7 @@ bool Ghost::loadTextures(TextureManager* texManager, const std::vector<std::stri
     frightenedTex2 = texManager->loadTexture(paths[7]);
     endFrightened = texManager->loadTexture(paths[8]);
     endFrightened2 = texManager->loadTexture(paths[9]);
+
     currentEye = eyeDown;
 
     return eyeUp && eyeDown && eyeLeft && eyeRight && bodyTex1 && bodyTex2;
@@ -475,6 +547,10 @@ SDL_Rect* Ghost::getHitBox() {
 
 
 void Ghost::render(SDL_Renderer* renderer) {
+//    if(showingScore) {
+//        renderScore(renderer);
+//        return;
+//    }
     SDL_Texture* texToRender = (bodyFrame == 0) ? bodyTex1 : bodyTex2;
     SDL_Texture* frightenedToRender = (bodyFrame == 0) ? frightenedTex : frightenedTex2;
     SDL_Texture* endFrightenedToRender = (bodyFrame == 0) ? endFrightened : endFrightened2;

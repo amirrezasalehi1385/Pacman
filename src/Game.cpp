@@ -46,7 +46,6 @@ Game::~Game() {
     livesTextures.clear();
 }
 
-bool pacmanDied;
 
 void Game::loadSounds() {
         windowManager.loadSound("chomp", "assets/Sounds/pacman_chomp.wav");
@@ -54,6 +53,8 @@ void Game::loadSounds() {
         windowManager.loadSound("eaten", "assets/Sounds/pacman_eatghost.wav");
         windowManager.loadSound("death", "assets/Sounds/pacman_death.wav");
         windowManager.loadSound("beginning", "assets/Sounds/pacman_beginning.wav");
+        windowManager.loadSound("returningToHouse" , "assets/Sounds/pacman-ghostRenturnToHome.wav");
+        windowManager.loadSound("siren", "assets/Sounds/pacman-ghostSiren.wav");
 };
 bool Game::init(const std::string& title, int w, int h) {
     if(!windowManager.init(title.c_str(), w, h))
@@ -82,7 +83,7 @@ bool Game::init(const std::string& title, int w, int h) {
     windowManager.playSound("beginning");
     textureManager = new TextureManager(windowManager.getRenderer());
 
-    backgroundTexture = textureManager->loadTexture("assets/map/background.png");
+//    backgroundTexture = textureManager->loadTexture("assets/map/background.png");
 
     gameMap = new Map(textureManager, windowManager.getRenderer());
     gameMap->loadLevel1();
@@ -107,7 +108,6 @@ bool Game::init(const std::string& title, int w, int h) {
     blinky->setWindowManager(&windowManager);
     blinky->loadTextures(textureManager, blinkyTextures);
 
-    blinky->loadTargetTexture(windowManager.getRenderer(), "assets/blinky_target.png");
 
     pinky = new Pinky();
     std::vector<std::string> pinkyTextures = {
@@ -125,7 +125,6 @@ bool Game::init(const std::string& title, int w, int h) {
     pinky->setWindowManager(&windowManager);
 
     pinky->loadTextures(textureManager, pinkyTextures);
-    pinky->loadTargetTexture(windowManager.getRenderer(), "assets/pinky_target.png");
 
     inky = new Inky();
     std::vector<std::string> InkyTextures = {
@@ -143,7 +142,6 @@ bool Game::init(const std::string& title, int w, int h) {
     inky->setWindowManager(&windowManager);
 
     inky->loadTextures(textureManager, InkyTextures);
-    inky->loadTargetTexture(windowManager.getRenderer(), "assets/inky_target.png");
     clyde = new Clyde();
     std::vector<std::string> clydeTextures = {
             "assets/ghost/eyeUp.png",
@@ -161,8 +159,8 @@ bool Game::init(const std::string& title, int w, int h) {
     clyde->setWindowManager(&windowManager);
 
     clyde->loadTextures(textureManager, clydeTextures);
-    clyde->loadTargetTexture(windowManager.getRenderer(), "assets/clyde_target.png");
 
+//    loadTargetTexture();
     ghosts.push_back(blinky);
     ghosts.push_back(pinky);
     ghosts.push_back(inky);
@@ -191,6 +189,13 @@ bool Game::init(const std::string& title, int w, int h) {
 
 }
 
+void Game::loadTargetTexture(){
+    clyde->loadTargetTexture(windowManager.getRenderer(), "assets/clyde_target.png");
+    pinky->loadTargetTexture(windowManager.getRenderer(), "assets/pinky_target.png");
+    blinky->loadTargetTexture(windowManager.getRenderer(), "assets/blinky_target.png");
+    inky->loadTargetTexture(windowManager.getRenderer(), "assets/inky_target.png");
+
+}
 void Game::resetPacmanPosition() {
     pacman->setPosition(13 * 16 + 3, 25 * 16 + 11);
     pacman->isAlive = true;
@@ -201,7 +206,20 @@ void Game::resetPacmanPosition() {
 }
 
 void Game::handlePacmanDeath() {
+    windowManager.stopSound("siren"); // قطع صدای سایرن
     windowManager.playSound("death");
+    isReady = false;
+    readyStartTime = SDL_GetTicks();
+
+    blinky->readyToExit = false;
+    pinky->readyToExit = false;
+    inky->readyToExit = false;
+    clyde->readyToExit = false;
+
+    modeStartTime = SDL_GetTicks();
+    cycleStarted = true;
+    cycleIndex = 0;
+    currentMode = SCATTER;
 
     const int frameCount = pacmanDeathTextures.size();
     const int frameDelay = 150;
@@ -222,10 +240,6 @@ void Game::handlePacmanDeath() {
     if(lives > 0) {
 
         SDL_Delay(500);
-        for(auto  g : ghosts){
-            g->reset();
-        }
-        resetPacmanPosition();
 
         frightenedUntil = 0;
         if(blinky->getState() == FRIGHTENED) blinky->setMode(currentMode);
@@ -238,9 +252,24 @@ void Game::handlePacmanDeath() {
         inky->endOfFrightening = false;
         clyde->endOfFrightening = false;
 
+        for(auto g : ghosts){
+            g->reset();
+        }
 
-    }
-    else {
+        isReady = false;
+        readyStartTime = SDL_GetTicks();
+        modeStartTime = SDL_GetTicks();
+        cycleStarted = true;
+        cycleIndex = 0;
+        currentMode = SCATTER;
+
+        blinky->readyToExit = false;
+        pinky->readyToExit = false;
+        inky->readyToExit = false;
+        clyde->readyToExit = false;
+
+        resetPacmanPosition();
+    }else {
         quit();
     }
 }
@@ -300,7 +329,7 @@ void Game::renderScore() {
 
 
 void Game::run() {
-    const int FPS = 144;
+    const int FPS = 60;
     const int frameDelay = 1000 / FPS;
     const float fixedDelta = 1.0f / 60.0f;
     float accumulator = 0;
@@ -314,20 +343,23 @@ void Game::run() {
 
         handleEvents();
 
-        // همیشه آپدیت میشه
         while (accumulator >= fixedDelta) {
             update();
             accumulator -= fixedDelta;
         }
 
         if(!isReady) {
+            if(windowManager.isSoundPlaying("siren")) {
+                windowManager.stopSound("siren");
+            }
+
             if(SDL_GetTicks() - readyStartTime >= readyDuration) {
                 isReady = true;
                 blinky->readyToExit = true;
                 modeStartTime = SDL_GetTicks();
                 cycleStarted = true;
+                windowManager.playSound("siren", true);
             }
-
             windowManager.clear();
 
             if (backgroundTexture) {
@@ -366,27 +398,29 @@ void Game::run() {
         }
     }
 }
-// Game.cpp
-
 
 
 void Game::update() {
-    setScore((pacman->getDotsEaten() * 10) + (pacman->getBigDotsEaten() * 50) );
+    setScore((pacman->getDotsEaten() * 10) + (pacman->getBigDotsEaten() * 50));
     Uint32 now = SDL_GetTicks();
+
     if (!pacman->isAlive) {
         handlePacmanDeath();
         return;
     }
+
     if(isReady) {
         pacman->update();
         pacman->move(gameMap, speed);
     }
+
     if(isReady) {
         blinky->checkCollisionWithPacman(pacman);
         pinky->checkCollisionWithPacman(pacman);
         inky->checkCollisionWithPacman(pacman);
         clyde->checkCollisionWithPacman(pacman);
     }
+
     if(pacman->ateBigDot) {
         pacman->ateBigDot = false;
         frightenedUntil = SDL_GetTicks() + frightenedTimes[currentFrightenedIndex];
@@ -412,7 +446,26 @@ void Game::update() {
         }
     }
 
+    for(auto g : ghosts) {
+        if(!g->ghostInGhostHouse() && g->getState() == EATEN) {
+            if(!g->returningSoundPlaying) {
+                windowManager.playSound("returningToHouse");
+                g->returningSoundPlaying = true;
+            }
+        }
+        else if(g->ghostInGhostHouse() && g->getState() == EATEN) {
+            if(g->returningSoundPlaying) {
+                windowManager.stopSound("returningToHouse");
+                g->returningSoundPlaying = false;
+            }
+        }
+    }
+
     if (frightenedUntil != 0) {
+        if(windowManager.isSoundPlaying("siren")) {
+            windowManager.stopSound("siren");
+        }
+
         Uint32 remaining = frightenedUntil - now;
 
         if (remaining <= 2000) {
@@ -430,7 +483,27 @@ void Game::update() {
         }
     }
 
+    bool shouldPlaySiren = false;
+    if(isReady && frightenedUntil == 0) {
+        bool anyGhostEaten = false;
+        for(auto g : ghosts) {
+            if(g->getState() == EATEN) {
+                anyGhostEaten = true;
+                break;
+            }
+        }
+        shouldPlaySiren = !anyGhostEaten;
+    }
 
+    if(shouldPlaySiren) {
+        if(!windowManager.isSoundPlaying("siren")) {
+            windowManager.playSound("siren", true);
+        }
+    } else {
+        if(windowManager.isSoundPlaying("siren")) {
+            windowManager.stopSound("siren");
+        }
+    }
 
     int pelletsEaten = pacman->getDotsEaten();
     if(pelletsEaten >= 10 && !inky->readyToExit) inky->readyToExit = true;
@@ -444,18 +517,20 @@ void Game::update() {
             cycleIndex++;
         }
     }
+
     for(auto g : ghosts) {
         if(g->getState() == SCATTER || g->getState() == CHASE){
             g->setMode(currentMode);
         }
     }
-    if(isReady)  blinky->update(*pacman, *gameMap);
-    inky->update(*pacman, *blinky, *gameMap);
-    pinky->update(*pacman, *gameMap);
-    clyde->update(*pacman, *gameMap);
+
+    if(isReady) {
+        blinky->update(*pacman, *gameMap);
+        inky->update(*pacman, *blinky, *gameMap);
+        pinky->update(*pacman, *gameMap);
+        clyde->update(*pacman, *gameMap);
+    }
 }
-
-
 
 void Game::quit() {
     isRunning = false;

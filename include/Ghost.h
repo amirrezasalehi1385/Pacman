@@ -16,8 +16,9 @@ public:
     bool endOfFrightening;
     float initialTileX;
     float initialTileY;
+    bool returningSoundPlaying = false;
     Ghost(float initX, float initY, int w, int h);
-
+    bool ghostInGhostHouse();
     bool loadTextures(TextureManager* texManager, const std::vector<std::string>& paths);
 
     bool checkCollisionWithPacman(Pacman* pacman);
@@ -41,6 +42,8 @@ public:
     SDL_Rect* getHitBox();
     void updateFrightened(const Map& map);
     void wait();
+    SDL_Rect rect;
+    Uint32 returnSoundEndTime = 0;
     GhostState getState() const { return state; }
     void setFrozen(bool val) { frozen = val; }
     void reset();
@@ -55,11 +58,10 @@ protected:
 private:
     const SDL_Rect ghostHouse = {11, 16, 8, 5};
     int pixelsMoved = 0;
-    SDL_Rect rect;
     SDL_Rect eyeRect;
     SDL_Texture* eyeTex;
     SDL_Rect hitbox;
-    int speed = 1;
+    int speed = 2;
     SDL_Texture* bodyTex1;
     SDL_Texture* bodyTex2;
     SDL_Texture* frightenedTex;

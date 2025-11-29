@@ -16,6 +16,7 @@ WindowManager::~WindowManager() {
     SDL_Quit();
 }
 
+
 bool WindowManager::init(const char* title, int width, int height) {
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
@@ -65,6 +66,7 @@ bool WindowManager::loadMusic(const std::string& id, const std::string& filePath
     return true;
 }
 
+
 void WindowManager::playMusic(const std::string& id, int loops) {
     if (musics.count(id))
         Mix_PlayMusic(musics[id], loops);
@@ -88,13 +90,33 @@ bool WindowManager::loadSound(const std::string& id, const std::string& filePath
     return true;
 }
 
-int WindowManager::playSound(const std::string& id, int loops) {
-    if (!sounds.count(id))
-        return -1;
+void WindowManager::playSound(const std::string& name, bool loop) {
+    if(sounds.find(name) != sounds.end()) {
+        int channel;
+        if(loop) {
+            channel = Mix_PlayChannel(-1, sounds[name], -1); // -1 = infinite loop
+        } else {
+            channel = Mix_PlayChannel(-1, sounds[name], 0); // 0 = play once
+        }
 
-    return Mix_PlayChannel(-1, sounds[id], loops);
+        // ذخیره channel number برای این صدا
+        if(channel != -1) {
+            soundChannels[name] = channel;
+        }
+    }
 }
 
-void WindowManager::stopSound(int channel) {
-    Mix_HaltChannel(channel);
+void WindowManager::stopSound(const std::string& name) {
+    // اگر این صدا در حال پخش است، فقط همان channel را متوقف کن
+    if(soundChannels.find(name) != soundChannels.end()) {
+        Mix_HaltChannel(soundChannels[name]);
+        soundChannels.erase(name);
+    }
+}
+
+bool WindowManager::isSoundPlaying(const std::string& name) {
+    if(soundChannels.find(name) != soundChannels.end()) {
+        return Mix_Playing(soundChannels[name]) != 0;
+    }
+    return false;
 }
