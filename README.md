@@ -66,7 +66,6 @@ Each ghost can be in one of several behavioral states during the game:
   - Ghosts stop chasing Pac-Man and head toward their **own corner of the maze**.  
   - This mode is **temporary**, allowing players a brief relief and helping to **mix the gameplay flow**.
 
-<img width="561" height="645" alt="image" src="https://github.com/user-attachments/assets/a813db8f-82e7-47c4-96bc-9ef71219c70b" />
 
 ---
 
@@ -80,7 +79,7 @@ Each ghost can be in one of several behavioral states during the game:
   - **Clyde** → Bottom-left corner  
 - Gives players a break from direct chasing.
 - Useful for creating rhythm in the gameplay.
-<img width="333" height="832" alt="image" src="https://github.com/user-attachments/assets/27a22f78-11a8-4d38-8a74-509052cddcca" />
+<img width="333"  alt="image" src="https://github.com/user-attachments/assets/27a22f78-11a8-4d38-8a74-509052cddcca" />
 
 ### Chase Mode
 - Each ghost uses its **specific targeting algorithm** to hunt Pac-Man.
@@ -91,3 +90,88 @@ Each ghost can be in one of several behavioral states during the game:
 
 Feel free to explore the code to better understand the behavior implementation.  
 This game is developed as a learning project using SDL and C++. Screenshots and logic closely follow the original arcade mechanics of Pac-Man.
+
+## Game Rules and Mechanics
+
+### Speeds
+
+Ghosts and Pac-Man have different speeds depending on level and state:
+
+- **Normal Ghost Speed:** `GHOST_SPEED_NORMAL` (1.0f by default)
+- **Frightened Ghost Speed:** `GHOST_SPEED_FRIGHTENED` (varies by level, see `getFrightenedSpeed(level)`)
+- **Eaten Ghost Speed:** `GHOST_SPEED_EATEN` (2.0f)
+- **Pac-Man Speed:** `PACMAN_SPEED` (2)
+
+Ghosts speed increases slightly every few levels as defined in `getGhostSpeed(level)`.
+
+---
+
+### Eating Ghosts and Scoring
+
+When Pac-Man eats a ghost during **Frightened mode**, the score increases for each successive ghost eaten in the same FRIGHTENED period:
+
+| Ghost eaten | Score | Notes |
+|-------------|-------|-------|
+| 1st ghost   | 200   | First ghost eaten in current FRIGHTENED period |
+| 2nd ghost   | 400   | Second ghost eaten in same FRIGHTENED period |
+| 3rd ghost   | 800   | Third ghost eaten in same FRIGHTENED period |
+| 4th ghost   | 1600  | Fourth ghost eaten in same FRIGHTENED period |
+
+- The scoring **resets** after FRIGHTENED mode ends.
+- When a ghost is eaten:
+  - `ghostEaten = true` is set.
+  - Ghost enters **EATEN state** and returns to the ghost house.
+  - `startShowingScore(score)` displays the points above the ghost temporarily.
+  - After `scoreDisplayDuration` (1000 ms), the ghost resumes normal behavior.
+
+- Score textures (`scoreTexture200`, `scoreTexture400`, etc.) are loaded and rendered via `Ghost::renderScore()`.
+
+
+
+> Note: The points double for each ghost eaten in the same FRIGHTENED period, encouraging Pac-Man to eat multiple ghosts consecutively for higher scores.
+
+---
+## Frightened Mode (Vulnerable Ghosts)
+
+When Pac-Man eats a **power pellet**, all ghosts enter **FRIGHTENED mode** for a limited duration:
+
+- **Behavior changes**:
+  - Ghosts **move slower** (`GHOST_SPEED_FRIGHTENED`) than normal.
+  - Ghosts **flee from Pac-Man** instead of chasing him.
+  - Movement becomes **randomized**, making their path less predictable.
+
+- **Interaction with Pac-Man**:
+  - If Pac-Man collides with a ghost in this state:
+    - The ghost is marked as **`ghostEaten = true`**.
+    - It enters the **EATEN state** and returns to the ghost house.
+    - Pac-Man earns **increasing points** depending on how many ghosts are eaten consecutively:
+
+    | Ghost eaten | Score | Notes |
+        |-------------|-------|-------|
+    | 1st ghost   | 200   | First ghost eaten in current FRIGHTENED period |
+    | 2nd ghost   | 400   | Second ghost eaten in same FRIGHTENED period |
+    | 3rd ghost   | 800   | Third ghost eaten in same FRIGHTENED period |
+    | 4th ghost   | 1600  | Fourth ghost eaten in same FRIGHTENED period |
+
+- **Visual cues**:
+  - Ghosts **turn blue** to indicate FRIGHTENED mode.
+  - Near the end of FRIGHTENED mode, ghosts **flash between blue and white** to warn the player that normal behavior will resume soon.
+
+- **Duration**:
+  - Controlled by `FRIGHTENED_TIME` per level.
+  - Once time expires, ghosts **return to CHASE or SCATTER mode** depending on the cycle.
+
+### Example (GIF)
+
+<img src="screenshots/ghostFrightened.gif" alt="Frightened Ghost Animation" width="320">
+
+> FRIGHTENED mode encourages strategic play, allowing Pac-Man to **turn the tables** and hunt ghosts temporarily.
+
+
+### Ghost Behavior Cycles
+
+Ghosts alternate between **CHASE** and **SCATTER** modes based on `GHOST_CYCLES` (milliseconds):
+
+```cpp
+constexpr std::array<Uint32, 7> GHOST_CYCLES = { 7000, 20000, 7000, 20000, 5000, 20000, 5000 };
+
