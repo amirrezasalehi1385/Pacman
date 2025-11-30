@@ -55,6 +55,7 @@ add_executable(Pacman main.cpp
         include/SoundManager.h
         src/SoundManager.cpp
         include/GameRules.h
+        include/GameState.h
 )
 
 target_include_directories(Pacman PRIVATE

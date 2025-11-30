@@ -59,7 +59,6 @@ void Game::loadSounds() {
 }
 
 void Game::handleLevelComplete() {
-    // 1. فریز کردن همه چیز
     pacman->setDirection(STOP);
     pacman->setNextDirection(STOP);
 
@@ -67,7 +66,6 @@ void Game::handleLevelComplete() {
         g->setFrozen(true);
     }
 
-    // 2. قطع صداها
     SoundManager::get().stop("siren");
     SoundManager::get().stop("frightened");
     SoundManager::get().stop("returningToHouse");
@@ -118,7 +116,7 @@ void Game::renderGameStatic() {
 }
 void Game::startNextLevel() {
     currentLevel++;
-
+    lives = 3;
     if(currentLevel > 255) {
         printf("YOU WIN! Reached level 256!\n");
         quit();
@@ -207,7 +205,7 @@ bool Game::init(const std::string& title, int w, int h) {
     SoundManager::get().playOnce("beginning");
     textureManager = new TextureManager(windowManager.getRenderer());
 
-    backgroundTexture = textureManager->loadTexture("assets/map/background.png");
+//    backgroundTexture = textureManager->loadTexture("assets/map/background.png");
 
     gameMap = new Map(textureManager, windowManager.getRenderer());
     gameMap->loadLevel1();
@@ -355,6 +353,8 @@ bool Game::init(const std::string& title, int w, int h) {
 
 }
 
+
+
 void Game::loadTargetTexture(){
     clyde->loadTargetTexture(windowManager.getRenderer(), "assets/clyde_target.png");
     pinky->loadTargetTexture(windowManager.getRenderer(), "assets/pinky_target.png");
@@ -363,6 +363,7 @@ void Game::loadTargetTexture(){
 
 }
 void Game::resetPacmanPosition() {
+    pacman->visible = true;
     pacman->setPosition(13 * 16 + 3, 25 * 16 + 11);
     pacman->isAlive = true;
     currentDir = STOP;
@@ -384,7 +385,7 @@ void Game::handlePacmanDeath() {
 
     isReady = false;
     readyStartTime = SDL_GetTicks();
-
+    pacman->visible = false;
     blinky->readyToExit = false;
     pinky->readyToExit = false;
     inky->readyToExit = false;
@@ -397,17 +398,33 @@ void Game::handlePacmanDeath() {
 
     const int frameCount = pacmanDeathTextures.size();
     const int frameDelay = 150;
+    SDL_Renderer* renderer = windowManager.getRenderer();
+    SDL_Rect dstRect = pacman->rect;
 
     for(int i = 0; i < frameCount; i++) {
-        SDL_SetRenderDrawColor(windowManager.getRenderer(), 0, 0, 0, 255);
-        SDL_RenderClear(windowManager.getRenderer());
+        windowManager.clear();
 
-        SDL_Rect dst = pacman->rect;
-        SDL_RenderCopy(windowManager.getRenderer(), pacmanDeathTextures[i], nullptr, &dst);
+        if(backgroundTexture) {
+            SDL_Rect bgRect = {0, 0, 448, 576};
+            SDL_RenderCopy(renderer, backgroundTexture, nullptr, &bgRect);
+        }
 
+        gameMap->render();
+
+        blinky->render(renderer);
+        pinky->render(renderer);
+        inky->render(renderer);
+        clyde->render(renderer);
+
+        renderLives();
+        renderScore();
+
+        SDL_RenderCopy(renderer, pacmanDeathTextures[i], nullptr, &dstRect);
         windowManager.present();
         SDL_Delay(frameDelay);
     }
+
+
 
     lives--;
 
@@ -466,29 +483,10 @@ void Game::renderLives() {
 }
 
 
-void Game::render() {
-    windowManager.clear();
 
-    if (backgroundTexture) {
-        SDL_Rect dst = {0, 0, 448, 576};
-        SDL_RenderCopy(windowManager.getRenderer(), backgroundTexture, nullptr, &dst);
-    }
-
-    gameMap->render();
-    pacman->render(windowManager.getRenderer());
-    blinky->render(windowManager.getRenderer());
-    pinky->render(windowManager.getRenderer());
-    inky->render(windowManager.getRenderer());
-    clyde->render(windowManager.getRenderer());
-    renderLives();
-    renderScore();
-    windowManager.present();
-}
 void Game::renderScore() {
     if (!font) return;
     SDL_Color color = {255, 255, 255, 255};
-
-    // Score
     std::string scoreText = std::to_string(getScore());
     int scoreW, scoreH;
     TTF_SizeText(font, scoreText.c_str(), &scoreW, &scoreH);
@@ -766,6 +764,9 @@ void Game::updateFrightened(){
 }
 void Game::update() {
     if(pacman->getDotsEaten() >= 225 * currentLevel && !levelComplete) {
+        for(auto g : ghosts) {
+            g->visible = false;
+        }
         pacman->resetAnimation();
         levelComplete = true;
         handleLevelComplete();
@@ -791,6 +792,5 @@ void Game::handleEvents() {
         pacman->handleInput(event);
     }
 }
-
 
 

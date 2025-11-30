@@ -21,7 +21,7 @@ bool Pacman::loadTextures(TextureManager* texManager,
 
 void Pacman::update() {
     Uint32 currentTime = SDL_GetTicks();
-    if (currentTime - lastTime >= 50) {
+    if (currentTime - lastTime >= 30) {
         frameIndex += frameDir;
         if(frameIndex == 2) frameDir = -1;
         else if(frameIndex == 0) frameDir = 1;
@@ -42,6 +42,7 @@ double Pacman::getAngle() const {
 }
 
 void Pacman::render(SDL_Renderer* renderer) {
+    if(!visible) return;
     SDL_Texture* tex = frames[frameIndex];
     double angle = getAngle();
     if(tex) SDL_RenderCopyEx(renderer, tex, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);
@@ -147,9 +148,9 @@ void Pacman::handleInput(const SDL_Event& event) {
 
 
 void Pacman::resetAnimation() {
-    frameIndex = 0;      // Pac-Man در حالت دهان بسته
-    frameDir = 1;        // جهت پیشرفت انیمیشن (به جلو)
-    lastTime = SDL_GetTicks();  // تایمر برای کنترل سرعت انیمیشن
+    frameIndex = 0;
+    frameDir = 1;
+    lastTime = SDL_GetTicks();
 }
 
 

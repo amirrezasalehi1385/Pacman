@@ -109,6 +109,7 @@ bool Ghost::checkCollisionWithPacman(Pacman* pacman) {
 }
 
 void Ghost::reset() {
+    visible = true;
     endOfFrightening = false;
     canGotoGhostHouse = true;
     readyToExit = false;
@@ -422,6 +423,7 @@ void Ghost::updateFrightened(const Map& map) {
 
 //---------------- Render ----------------
 void Ghost::render(SDL_Renderer* renderer) {
+    if(!visible) return;
     if(showingScore) { renderScore(renderer); return; }
 
     SDL_Texture* texToRender = (bodyFrame==0)? bodyTex1: bodyTex2;

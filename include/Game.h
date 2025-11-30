@@ -9,6 +9,7 @@
 #include <string>
 #include <SDL2/SDL_ttf.h>
 #include "GameRules.h"
+#include "GameState.h"
 
 class Game {
 public:
@@ -34,6 +35,7 @@ public:
     void setScore(int s) { score = s; }
     int ghostsEatenInThisFrightened = 0;
     void renderGame();
+    void playPacmanDeathAnimation();
     void updateScore();
     void updatePacman();
     void updateGhosts();
@@ -44,7 +46,13 @@ public:
     void startNextLevel();
     void updateGhostSpeedForLevel();
     void updateFrightenedTimeForLevel();
-
+    void renderMenu();
+    void handleMenuInput();
+    GameState currentState = GameState::MENU;
+    int selectedIndex = 0;
+    std::vector<std::string> options = { "Start", "Exit" };
+    void handleMenuEvent(SDL_Event& event);
+    void handleEvent(SDL_Event& event); // نسخه با پارامتر
 private:
     int currentLevel = 1;
     bool levelComplete = false;

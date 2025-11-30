@@ -19,6 +19,7 @@ public:
     bool endOfFrightening;
     float initialTileX;
     float initialTileY;
+    bool visible = true;
     bool returningSoundPlaying = false;
     Ghost(float initX, float initY, int w, int h);
     bool ghostInGhostHouse();

@@ -164,7 +164,6 @@ When Pac-Man eats a **power pellet**, all ghosts enter **FRIGHTENED mode** for a
 ### Example (GIF)
 
 <img src="screenshots/ghostFrightened.gif" alt="Frightened Ghost Animation" width="320">
-![Rec0008-ezgif com-video-to-gif-converter (1)](https://github.com/user-attachments/assets/9597d3d0-f4a8-4d6f-996e-5b9ff0098918)
 
 > FRIGHTENED mode encourages strategic play, allowing Pac-Man to **turn the tables** and hunt ghosts temporarily.
 
