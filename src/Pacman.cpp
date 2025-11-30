@@ -86,7 +86,7 @@ void Pacman::handleInput(const SDL_Event& event) {
             case SDLK_RIGHT: nextDir = RIGHT; break;
         }
     }
-}void Pacman::move(Map* map, int speed) {
+}void Pacman::move(Map* map, float speed) {
     SDL_Rect testHitbox = hitbox;
     SDL_Point nextTile = getTile();
 
@@ -112,8 +112,6 @@ void Pacman::handleInput(const SDL_Event& event) {
         case RIGHT: nextHitbox.x += speed; currNextTile.x += 1; break;
         default: break;
     }
-
-
 
     if(currentDir != STOP && !map->checkCollision(nextHitbox) &&
        !Map::isInGhostHouse(currNextTile.x, currNextTile.y))
@@ -148,6 +146,11 @@ void Pacman::handleInput(const SDL_Event& event) {
 }
 
 
+void Pacman::resetAnimation() {
+    frameIndex = 0;      // Pac-Man در حالت دهان بسته
+    frameDir = 1;        // جهت پیشرفت انیمیشن (به جلو)
+    lastTime = SDL_GetTicks();  // تایمر برای کنترل سرعت انیمیشن
+}
 
 
 SDL_Point Pacman::getTile() const {

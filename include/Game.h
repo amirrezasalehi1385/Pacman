@@ -30,27 +30,36 @@ public:
     void renderLives();
     void renderScore();
     void loadSounds();
-    int getScore(){
-        return score;
-    };
-    void setScore(int s){
-        score = s;
-    }
+    int getScore() { return score; }
+    void setScore(int s) { score = s; }
     int ghostsEatenInThisFrightened = 0;
+    void renderGame();
+    void updateScore();
+    void updatePacman();
+    void updateGhosts();
+    void updateFrightened();
+    void handleLevelComplete();
+    void playMazeFlashAnimation();
+    void renderGameStatic();
+    void startNextLevel();
+    void updateGhostSpeedForLevel();
+    void updateFrightenedTimeForLevel();
 
 private:
+    int currentLevel = 1;
+    bool levelComplete = false;
+    int totalDots = 0;
     int score;
-
+    int ghostScore = 0;
     Direction currentDir = STOP;
     std::array<Uint32, 7> cycleTimes = GameRules::GHOST_CYCLES;
-    std::array<Uint32, 4> frightenedTimes = GameRules::FRIGHTENED_TIMES;
+    Uint32 frightenedTime = GameRules::getFrightenedTime(1);
     std::vector<Ghost*> ghosts;
     GhostState currentMode = SCATTER;
     int cycleIndex = 0;
     Uint32 modeStartTime = 0;
     bool cycleStarted = false;
     Uint32 frightenedUntil = 0;
-
     int currentFrightenedIndex = 0;
     Uint32 gameStartTime;
     void handleEvents();

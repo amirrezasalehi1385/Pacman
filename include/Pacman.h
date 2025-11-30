@@ -25,6 +25,7 @@ public:
     void setBigDotsEaten(int x);
     int getBigDotsEaten() const;
     void setPosition(int x, int y);
+    void resetAnimation();
     void setDirection(Direction dir) { currentDir = dir; }
     void setWindowManager(WindowManager* wm) {
         windowManager = wm;
@@ -33,7 +34,7 @@ public:
     void setDotsEaten(int x);
     Direction getDirection() const { return currentDir; }
     void handleInput(const SDL_Event& event);
-    void move(Map* map, int speed);
+    void move(Map* map, float speed);
     Direction getNextDirection() const { return nextDir; }
     void setNextDirection(Direction dir) { nextDir = dir; }
     SDL_Point getTile() const;

@@ -3,7 +3,9 @@
 #include <SDL2/SDL.h>
 #include <cmath>
 #include <vector>
-
+#define TILE_SIZE GameRules::TILE_SIZE
+#define MAP_WIDTH_TILE GameRules::MAP_WIDTH_TILES
+#define MAP_HEIGHT_TILE GameRules::MAP_HEIGHT_TILES
 Ghost::Ghost(float initX, float initY, int w, int h)
         : initialTileX(initX), initialTileY(initY), w(w), h(h), pixelsMoved(0.0f),
           posX(initX * 16 + 8 - w / 2), posY(initY * 16 + 3*16 + 8 - h/2),
@@ -17,7 +19,7 @@ Ghost::Ghost(float initX, float initY, int w, int h)
     rect = {static_cast<int>(posX) - 8, static_cast<int>(posY) + 8, w, h};
     updateHitbox();
     targetTexture = nullptr;
-    currentTile = {(int)initX, (int)initY};
+    currentTile = {initX, initY};
     targetTile = currentTile;
     currentDirection = STOP;
     scoreTexture200 = nullptr;
@@ -79,12 +81,11 @@ void Ghost::renderScore(SDL_Renderer* renderer) {
 
 bool Ghost::ghostInGhostHouse() {
     const SDL_Rect ghostHouseTiles = {11, 16, 8, 5};
-    const int tileSize = 16;
     SDL_Rect ghostHouse = {
-            ghostHouseTiles.x * tileSize,
-            ghostHouseTiles.y * tileSize,
-            ghostHouseTiles.w * tileSize,
-            ghostHouseTiles.h * tileSize
+            ghostHouseTiles.x * TILE_SIZE,
+            ghostHouseTiles.y * TILE_SIZE,
+            ghostHouseTiles.w * TILE_SIZE,
+            ghostHouseTiles.h * TILE_SIZE
     };
     SDL_Rect ghostRect = rect;
     return (ghostRect.x + ghostRect.w > ghostHouse.x &&
@@ -115,54 +116,34 @@ void Ghost::reset() {
     state = WAIT;
     pixelsMoved = 0.0f;
     currentDirection = STOP;
-    speed = GameRules::GHOST_SPEED_NORMAL;
+
+    // ✅ سرعت عادی رو برگردون (نه GHOST_SPEED_NORMAL)
+    speed = normalSpeed;
+
     posX = initialTileX * 16 + 8 - w/2;
     posY = initialTileY * 16 + 3*16 + 8 - h/2;
     rect = {static_cast<int>(posX) - 8, static_cast<int>(posY) + 8, w, h};
     updateHitbox();
-    currentTile = {(int)initialTileX, (int)initialTileY};
+    currentTile = {initialTileX, initialTileY};
     targetTile = currentTile;
 }
 
 //---------------- Wait State ----------------
 
 void Ghost::wait() {
-    const float tileSize = 16.0f;
-    const int offset = 8; // وسط تایل
-
-    // تعیین جهت اولیه
-    if(currentDirection == STOP) currentDirection = UP;
-
-    // حرکت واقعی
-    switch(currentDirection) {
-        case UP:
-            posY -= speed;
-            currentEye = eyeUp;
-            break;
-        case DOWN:
-            posY += speed;
-            currentEye = eyeDown;
-            break;
-        default:
-            break;
+    if(currentDirection == STOP) { currentDirection = UP; }
+    switch (currentDirection) {
+        case UP: rect.y -= 1; currentEye = eyeUp; break;
+        case DOWN: rect.y += 1; currentEye = eyeDown;
+        break; default: break;
     }
-
-    pixelsMoved += speed;
-
-    if(pixelsMoved >= tileSize) {
-        pixelsMoved = 0.0f;
-        currentDirection = (currentDirection == UP) ? DOWN : UP;
-
-        // تراز کردن در وسط تایل
-        currentTile.x = static_cast<int>((posX + offset) / tileSize);
-        currentTile.y = static_cast<int>((posY + offset) / tileSize);
-
-        posX = currentTile.x * tileSize + offset - w / 2;
-        posY = currentTile.y * tileSize + offset - h / 2;
+    pixelsMoved += 1;
+    if(pixelsMoved >= TILE_SIZE) {
+        pixelsMoved = 0;
+        if(currentDirection == UP)
+            currentDirection = DOWN;
+        else if(currentDirection == DOWN) currentDirection = UP;
     }
-
-    rect.x = static_cast<int>(posX);
-    rect.y = static_cast<int>(posY);
     updateHitbox();
 }
 
@@ -179,22 +160,26 @@ void Ghost::update(const Map& map) {
             wait();
             if(readyToExit) state = EXIT;
             break;
+
         case EXIT:
-            speed = GameRules::GHOST_SPEED_NORMAL;
+            speed = normalSpeed;
             getOutOfHouse(map);
             canGotoGhostHouse = true;
             break;
+
         case CHASE:
         case SCATTER:
-            speed = GameRules::GHOST_SPEED_NORMAL;
+            speed = normalSpeed;
             canGotoGhostHouse = false;
             updateChaseScatter(map);
             break;
+
         case FRIGHTENED:
             speed = GameRules::GHOST_SPEED_FRIGHTENED;
             canGotoGhostHouse = false;
             updateFrightened(map);
             break;
+
         case EATEN:
             speed = GameRules::GHOST_SPEED_EATEN;
             canGotoGhostHouse = true;
@@ -209,19 +194,21 @@ void Ghost::update(const Map& map) {
 }
 
 //---------------- Movement ----------------
+bool flag = true;
 
 void Ghost::getOutOfHouse(const Map& map) {
-    const float tileSize = 16.0f;
-    const int mapWidthTiles = 28;
-    const int mapHeightTiles = 31;
     const int exitTileX = 14;
     const int exitTileY = 11;
     const int offsetX = -8;
-
+    if(flag) {
+        posX = currentTile.x * TILE_SIZE + 8 - w/2 + offsetX;
+        posY = currentTile.y * TILE_SIZE + 3*TILE_SIZE + 8 - h/2;
+        flag = false;
+    }
     if(pixelsMoved == 0.0f) {
-        int rawTileX = static_cast<int>((posX + 8 - offsetX) / tileSize);
-        currentTile.x = ((rawTileX % mapWidthTiles) + mapWidthTiles) % mapWidthTiles;
-        currentTile.y = static_cast<int>((posY + 8 - 3 * tileSize) / tileSize);
+        int rawTileX = static_cast<int>((posX + 8 - offsetX) / TILE_SIZE);
+        currentTile.x = ((rawTileX % MAP_WIDTH_TILE) + MAP_WIDTH_TILE) % MAP_WIDTH_TILE;
+        currentTile.y = static_cast<int>((posY + 8 - 3 * TILE_SIZE) / TILE_SIZE);
 
         Direction nextDir = STOP;
         if(currentTile.x < exitTileX) nextDir = RIGHT;
@@ -229,6 +216,7 @@ void Ghost::getOutOfHouse(const Map& map) {
         else if(currentTile.y > exitTileY) nextDir = UP;
         else if(currentTile.y == exitTileY) {
             state = SCATTER;
+            flag = true;
             pixelsMoved = 0.0f;
             currentDirection = LEFT;
             currentEye = eyeLeft;
@@ -248,35 +236,31 @@ void Ghost::getOutOfHouse(const Map& map) {
         pixelsMoved += speed;
     }
 
-    if(pixelsMoved >= tileSize) {
+    if(pixelsMoved >= TILE_SIZE) {
         pixelsMoved = 0.0f;
-        currentTile.x = static_cast<int>((posX + 8 - offsetX) / tileSize);
-        currentTile.y = static_cast<int>((posY + 8 - 3*tileSize) / tileSize);
-        posX = currentTile.x * tileSize + 8 - w/2 + offsetX;
-        posY = currentTile.y * tileSize + 3*tileSize + 8 - h/2;
+        currentTile.x = static_cast<int>((posX + 8 - offsetX) / TILE_SIZE);
+        currentTile.y = static_cast<int>((posY + 8 - 3*TILE_SIZE) / TILE_SIZE);
+        posX = currentTile.x * TILE_SIZE + 8 - w/2 + offsetX;
+        posY = currentTile.y * TILE_SIZE + 3*TILE_SIZE + 8 - h/2;
     }
 
     rect.x = static_cast<int>(posX);
     rect.y = static_cast<int>(posY);
+
     updateHitbox();
 }
 
 void Ghost::updateChaseScatter(const Map& map) {
-    const int mapWidthTiles = 28;
-    const int mapHeightTiles = 31;
-    const float tileSize = 16.0f;
-    const int tunnelRow = 14;
-
     if(pixelsMoved == 0.0f) {
-        currentTile.x = static_cast<int>((posX + 8) / tileSize) % mapWidthTiles;
-        currentTile.y = static_cast<int>((posY + 8 - 3*tileSize) / tileSize);
+        currentTile.x = static_cast<float>((posX + 8) / TILE_SIZE);
+        currentTile.y = static_cast<float>((posY + 8 - 3*TILE_SIZE) / TILE_SIZE);
 
         int adjustedTargetX = targetTile.x;
         int adjustedTargetY = targetTile.y;
 
-        bool targetInTunnel = (targetTile.y == tunnelRow) &&
-                              (targetTile.x == 0 || targetTile.x == mapWidthTiles - 1);
-        if(targetInTunnel) adjustedTargetX = (targetTile.x == 0) ? mapWidthTiles - 1 : 0;
+        bool targetInTunnel = (targetTile.y == GameRules::TUNNEL_ROW) &&
+                              (targetTile.x == 0 || targetTile.x == MAP_WIDTH_TILE - 1);
+        if(targetInTunnel) adjustedTargetX = (targetTile.x == 0) ? MAP_WIDTH_TILE - 1 : 0;
 
         Direction reverseDir;
         switch(currentDirection) {
@@ -303,12 +287,12 @@ void Ghost::updateChaseScatter(const Map& map) {
 
             bool isValidTile = false;
             int actualNx = nx;
-            if(ny == tunnelRow) {
-                if(nx < 0) actualNx = mapWidthTiles - 1;
-                else if(nx >= mapWidthTiles) actualNx = 0;
+            if(ny == GameRules::TUNNEL_ROW) {
+                if(nx < 0) actualNx = MAP_WIDTH_TILE - 1;
+                else if(nx >= MAP_WIDTH_TILE) actualNx = 0;
                 isValidTile = map.isWalkable(actualNx, ny);
             } else {
-                if(nx>=0 && nx<mapWidthTiles && ny>=0 && ny<mapHeightTiles) {
+                if(nx>=0 && nx<MAP_WIDTH_TILE && ny>=0 && ny<MAP_HEIGHT_TILE) {
                     actualNx = nx;
                     isValidTile = map.isWalkable(actualNx, ny);
                 }
@@ -318,9 +302,9 @@ void Ghost::updateChaseScatter(const Map& map) {
             int dx = actualNx - adjustedTargetX;
             int dy = ny - adjustedTargetY;
 
-            if(ny == tunnelRow) {
+            if(ny == GameRules::TUNNEL_ROW) {
                 int normalDist = abs(dx);
-                int wrapDist = mapWidthTiles - normalDist;
+                int wrapDist = MAP_WIDTH_TILE - normalDist;
                 if(wrapDist < normalDist) dx = (dx>0)? -wrapDist : wrapDist;
             }
 
@@ -344,15 +328,15 @@ void Ghost::updateChaseScatter(const Map& map) {
         pixelsMoved += speed;
     }
 
-    if(pixelsMoved >= tileSize) {
+    if(pixelsMoved >= TILE_SIZE) {
         pixelsMoved = 0.0f;
-        currentTile.x = static_cast<int>((posX + 8) / tileSize);
-        currentTile.y = static_cast<int>((posY + 8 - 3*tileSize) / tileSize);
-        posX = currentTile.x * tileSize + 8 - w/2;
-        posY = currentTile.y * tileSize + 3*tileSize + 8 - h/2;
+        currentTile.x = static_cast<int>((posX + 8) / TILE_SIZE);
+        currentTile.y = static_cast<int>((posY + 8 - 3*TILE_SIZE) / TILE_SIZE);
+        posX = currentTile.x * TILE_SIZE + 8 - w/2;
+        posY = currentTile.y * TILE_SIZE + 3*TILE_SIZE + 8 - h/2;
     }
 
-    int mapWidth = mapWidthTiles * static_cast<int>(tileSize);
+    int mapWidth = MAP_WIDTH_TILE * static_cast<int>(TILE_SIZE);
     if(posX + w/2 < 0) posX = mapWidth - w/2;
     else if(posX + w/2 >= mapWidth) posX = -w/2;
 
@@ -363,14 +347,10 @@ void Ghost::updateChaseScatter(const Map& map) {
 
 //---------------- Update Frightened ----------------
 void Ghost::updateFrightened(const Map& map) {
-    const int mapWidthTiles = 28;
-    const int mapHeightTiles = 31;
-    const float tileSize = 16.0f;
-    const int tunnelRow = 14;
 
     if(pixelsMoved == 0.0f) {
-        currentTile.x = static_cast<int>((posX + 8) / tileSize);
-        currentTile.y = static_cast<int>((posY + 8 - 3*tileSize) / tileSize);
+        currentTile.x = static_cast<int>((posX + 8) / TILE_SIZE);
+        currentTile.y = static_cast<int>((posY + 8 - 3*TILE_SIZE) / TILE_SIZE);
 
         Direction reverseDir;
         switch(currentDirection) {
@@ -394,12 +374,12 @@ void Ghost::updateFrightened(const Map& map) {
 
             bool isValidTile = false;
             int actualNx = nx;
-            if(ny == tunnelRow) {
-                if(nx<0) actualNx = mapWidthTiles-1;
-                else if(nx>=mapWidthTiles) actualNx = 0;
+            if(ny == GameRules::TUNNEL_ROW) {
+                if(nx<0) actualNx = MAP_WIDTH_TILE-1;
+                else if(nx>=MAP_WIDTH_TILE) actualNx = 0;
                 isValidTile = map.isWalkable(actualNx, ny);
             } else {
-                if(nx>=0 && nx<mapWidthTiles && ny>=0 && ny<mapHeightTiles) {
+                if(nx>=0 && nx<MAP_WIDTH_TILE && ny>=0 && ny<MAP_HEIGHT_TILE) {
                     actualNx = nx;
                     isValidTile = map.isWalkable(actualNx, ny);
                 }
@@ -423,15 +403,15 @@ void Ghost::updateFrightened(const Map& map) {
         pixelsMoved += speed;
     }
 
-    if(pixelsMoved >= tileSize) {
+    if(pixelsMoved >= TILE_SIZE) {
         pixelsMoved = 0.0f;
-        currentTile.x = static_cast<int>((posX + 8) / tileSize);
-        currentTile.y = static_cast<int>((posY + 8 - 3*tileSize) / tileSize);
-        posX = currentTile.x*tileSize + 8 - w/2;
-        posY = currentTile.y*tileSize + 3*tileSize + 8 - h/2;
+        currentTile.x = static_cast<int>((posX + 8) / TILE_SIZE);
+        currentTile.y = static_cast<int>((posY + 8 - 3*TILE_SIZE) / TILE_SIZE);
+        posX = currentTile.x*TILE_SIZE + 8 - w/2;
+        posY = currentTile.y*TILE_SIZE + 3*TILE_SIZE + 8 - h/2;
     }
 
-    int mapWidth = mapWidthTiles * static_cast<int>(tileSize);
+    int mapWidth = MAP_WIDTH_TILE * static_cast<int>(TILE_SIZE);
     if(posX + w/2 < 0) posX = mapWidth - w/2;
     else if(posX + w/2 >= mapWidth) posX = -w/2;
 
@@ -544,14 +524,14 @@ void Ghost::setPosition(int x, int y) {
     updateHitbox();
 }
 
-SDL_Point Ghost::getCurrentTile() const { return currentTile; }
+SDL_FPoint Ghost::getCurrentTile() const { return currentTile; }
 
 void Ghost::setTarget(const SDL_Rect& targetRect) {
     targetTile.x = targetRect.x / 16;
     targetTile.y = targetRect.y / 16;
 }
 
-void Ghost::setTargetTile(int tileX, int tileY) {
+void Ghost::setTargetTile(float tileX, float tileY) {
     targetTile.x = tileX;
     targetTile.y = tileY;
 }

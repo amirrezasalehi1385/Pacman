@@ -19,7 +19,7 @@ void Clyde::update(const Pacman& pacman, const Map& map) {
 
         case CHASE: {
             SDL_Point pacTile = pacman.getTile();
-            SDL_Point clydeTile = getCurrentTile();
+            SDL_FPoint clydeTile = getCurrentTile();
 
             int dx = pacTile.x - clydeTile.x;
             int dy = pacTile.y - clydeTile.y;
@@ -43,7 +43,7 @@ void Clyde::update(const Pacman& pacman, const Map& map) {
             Ghost::update(map);
             break;
         case EATEN:
-            setTargetTile(13, 14);
+            setTargetTile(13.5, 14);
             Ghost::update(map);
             break;
     }

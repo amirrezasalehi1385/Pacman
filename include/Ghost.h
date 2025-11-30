@@ -5,11 +5,15 @@
 #include "Direction.h"
 #include "Pacman.h"
 #include "GhostState.h"
+#include "GameRules.h"
 
 class Map;
 class Ghost {
 public:
+    float normalSpeed = GameRules::GHOST_SPEED_NORMAL;
     bool canGotoGhostHouse;
+    void setNormalSpeed(float speed) { normalSpeed = speed; } // ✅ اضافه کن
+
     bool readyToExit;
     bool ghostEaten;
     bool endOfFrightening;
@@ -18,9 +22,10 @@ public:
     bool returningSoundPlaying = false;
     Ghost(float initX, float initY, int w, int h);
     bool ghostInGhostHouse();
-    float posX, posY;       // موقعیت واقعی روی صفحه
-    float pixelsMoved;      // مقدار دقیق حرکت در پیکسل
-    float speed;            // سرعت اعشاری
+    float posX, posY;
+    float pixelsMoved;
+    bool exitingHouse = false;
+    float speed;
     bool loadTextures(TextureManager* texManager, const std::vector<std::string>& paths);
     bool checkCollisionWithPacman(Pacman* pacman);
     void update(const Map& map);
@@ -41,9 +46,9 @@ public:
     void renderScore(SDL_Renderer* renderer);
 
     void setPosition(int x, int y);
-    SDL_Point getCurrentTile() const;
+    SDL_FPoint getCurrentTile() const;
     void setTarget(const SDL_Rect& targetRect);
-    void setTargetTile(int tileX, int tileY);
+    void setTargetTile(float tileX, float tileY);
     bool loadTargetTexture(SDL_Renderer* renderer, const std::string& path);
     void renderTarget(SDL_Renderer* renderer);
     void clearTargetTexture();
@@ -60,7 +65,7 @@ public:
     GhostState getState() const { return state; }
     void setFrozen(bool val) { frozen = val; }
     void reset();
-    bool scoreBeingDisplayed = false;  // نشان‌دهنده اینکه در حال نمایش امتیاز است
+    bool scoreBeingDisplayed = false;
     bool showingScore;
     Uint32 scoreDisplayStartTime;
     int scoreDisplayDuration;
@@ -68,8 +73,8 @@ public:
     int scoreValue = 200;
 protected:
     int w, h;
-    SDL_Point targetTile;
-    SDL_Point currentTile;
+    SDL_FPoint  targetTile;
+    SDL_FPoint currentTile;
     Direction currentDirection = STOP;
     SDL_Point scatterCorner;
     GhostState state = WAIT;
@@ -79,9 +84,6 @@ private:
     SDL_Texture* scoreTexture400;
     SDL_Texture* scoreTexture800;
     SDL_Texture* scoreTexture1600;
-
-
-
     const SDL_Rect ghostHouse = {11, 16, 8, 5};
     SDL_Rect eyeRect;
     SDL_Texture* eyeTex;
@@ -106,3 +108,12 @@ private:
     bool frozen = false;
     void updateHitbox();
 };
+inline SDL_Rect toRect(const SDL_FRect& fr)
+{
+    SDL_Rect r;
+    r.x = (int)fr.x;
+    r.y = (int)fr.y;
+    r.w = (int)fr.w;
+    r.h = (int)fr.h;
+    return r;
+}

@@ -11,6 +11,7 @@ void Map::spawnDots() {
             if (mapGrid[y][x] == 0) {
                 if (!(y >= 9 && y <= 22 && x >= 7 && x <= 20) && !(y == 14 && (x <= 5 || x >= 22)) && !(x == 14 && y == 23) ) {
                     tileGrid[y][x] = 21;
+                    totalDots++;
                     emptyTiles.emplace_back(x,y);
                 }
             }
@@ -26,13 +27,27 @@ void Map::spawnDots() {
     }
 }
 
+void Map::resetDots() {
+    totalDots = 0;
 
+    for (int y = 0; y < tileGrid.size(); ++y) {
+        for (int x = 0; x < tileGrid[y].size(); ++x) {
+            // اگه dot بود، پاک کن
+            if (tileGrid[y][x] == 21 || tileGrid[y][x] == 22) {
+                tileGrid[y][x] = 0;
+            }
+        }
+    }
 
+    // دوباره spawn کن
+    spawnDots();
+}
 
 Map::Map(TextureManager* texManager, SDL_Renderer* rend)
         : textureManager(texManager), renderer(rend)
 {
-    texturePaths = {
+    // تکسچرهای آبی
+    std::vector<std::string> texturePathsBlue = {
             "",
             "assets/walls/1.png",
             "assets/walls/2.png",
@@ -67,10 +82,54 @@ Map::Map(TextureManager* texManager, SDL_Renderer* rend)
             "assets/walls/31.png"
     };
 
-    for(auto& path : texturePaths) {
-        if(path.empty()) textures.push_back(nullptr);
-        else textures.push_back(textureManager->loadTexture(path));
+    for(auto& path : texturePathsBlue) {
+        if(path.empty()) texturesBlue.push_back(nullptr);
+        else texturesBlue.push_back(textureManager->loadTexture(path));
     }
+
+    // تکسچرهای سفید
+    std::vector<std::string> texturePathsWhite = {
+            "",
+            "assets/walls_white/1.png",
+            "assets/walls_white/2.png",
+            "assets/walls_white/3.png",
+            "assets/walls_white/4.png",
+            "assets/walls_white/5.png",
+            "assets/walls_white/6.png",
+            "assets/walls_white/7.png",
+            "assets/walls_white/8.png",
+            "assets/walls_white/9.png",
+            "assets/walls_white/10.png",
+            "assets/walls_white/11.png",
+            "assets/walls_white/12.png",
+            "assets/walls_white/13.png",
+            "assets/walls_white/14.png",
+            "assets/walls_white/15.png",
+            "assets/walls_white/16.png",
+            "assets/walls_white/17.png",
+            "assets/walls_white/18.png",
+            "assets/walls_white/19.png",
+            "assets/walls_white/20.png",
+            "assets/walls_white/21.png",
+            "assets/walls_white/22.png",
+            "assets/walls_white/23.png",
+            "assets/walls_white/24.png",
+            "assets/walls_white/25.png",
+            "assets/walls_white/26.png",
+            "assets/walls_white/27.png",
+            "assets/walls_white/28.png",
+            "assets/walls_white/29.png",
+            "assets/walls_white/30.png",
+            "assets/walls_white/31.png"
+    };
+
+    for(auto& path : texturePathsWhite) {
+        if(path.empty()) texturesWhite.push_back(nullptr);
+        else texturesWhite.push_back(textureManager->loadTexture(path));
+    }
+
+    // شروع با تکسچرهای آبی
+    currentTextures = &texturesBlue;
 }
 void Map::loadLevel1() {
     std::vector<std::vector<int>> level = {
@@ -115,24 +174,34 @@ void Map::loadLevel1() {
 
 bool Map::checkCollision(const SDL_Rect& hitbox) const
 {
+    SDL_Rect hitboxInt;
+    hitboxInt.x = (int)hitbox.x;
+    hitboxInt.y = (int)hitbox.y;
+    hitboxInt.w = (int)hitbox.w;
+    hitboxInt.h = (int)hitbox.h;
+
     for (int row = 0; row < mapGrid.size(); row++) {
         for (int col = 0; col < mapGrid[row].size(); col++) {
+
             int tile = mapGrid[row][col];
             if (tile != 0) {
+
                 SDL_Rect wallRect;
                 wallRect.x = col * tileSize;
                 wallRect.y = 3 * tileSize + row * tileSize;
                 wallRect.w = tileSize;
                 wallRect.h = tileSize;
 
-                if (SDL_HasIntersection(&hitbox, &wallRect)) {
+                if (SDL_HasIntersection(&hitboxInt, &wallRect)) {
                     return true;
                 }
             }
         }
     }
+
     return false;
 }
+
 
 void Map::loadMap(const std::vector<std::vector<int>>& mapData) {
     mapGrid = mapData;
@@ -204,8 +273,8 @@ void Map::render() {
         for(int col=0; col<tileGrid[row].size(); ++col){
             int texIndex = tileGrid[row][col];
             if(texIndex == 0) continue;
+            SDL_Texture* tex = (*currentTextures)[texIndex];
 
-            SDL_Texture* tex = textures[texIndex];
             SDL_Rect dst{
                     col * tileSize,
                     3 * tileSize + row * tileSize,
@@ -216,6 +285,10 @@ void Map::render() {
         }
     }
 }
+void Map::setMazeFlash(bool white) {
+    currentTextures = white ? &texturesWhite : &texturesBlue;
+}
+
 
 bool Map::isWalkable(int x, int y) const {
     bool walkable = (mapGrid[y][x] == 0);

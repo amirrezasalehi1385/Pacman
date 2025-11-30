@@ -60,7 +60,7 @@ void Inky::update(const Pacman& pacman, const Ghost& blinky, const Map& map) {
             Ghost::update(map);
             break;
         case EATEN:
-            setTargetTile(13, 14);
+            setTargetTile(13.5, 14);
 
             Ghost::update(map);
             break;
