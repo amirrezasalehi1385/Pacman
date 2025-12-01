@@ -10,7 +10,8 @@
 #include <SDL2/SDL_ttf.h>
 #include "GameRules.h"
 #include "GameState.h"
-
+#include "Fruit.h"
+#include "FruitManager.h"
 class Game {
 public:
     Game();
@@ -53,7 +54,11 @@ public:
     std::vector<std::string> options = { "Start", "Exit" };
     void handleMenuEvent(SDL_Event& event);
     void handleEvent(SDL_Event& event); // نسخه با پارامتر
+    int fruitsScore = 0;
 private:
+    Fruit* fruit = nullptr;
+    FruitManager fruitManager;
+\
     int currentLevel = 1;
     bool levelComplete = false;
     int totalDots = 0;

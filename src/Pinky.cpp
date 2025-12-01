@@ -5,7 +5,7 @@ Pinky::Pinky()
     scatterCorner = {0,0};
 }
 
-void Pinky::update(const Pacman& pacman, const Map& map) {
+void Pinky::update(int level, const Pacman& pacman, const Map& map) {
 
     switch(state) {
         case WAIT:
@@ -41,20 +41,20 @@ void Pinky::update(const Pacman& pacman, const Map& map) {
             }
 
             setTarget(targetRect);
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
         }
 
         case SCATTER:
             setTargetTile(scatterCorner.x, scatterCorner.y);
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
         case FRIGHTENED :
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
         case EATEN:
             setTargetTile(13.5, 14);
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
     }
 }

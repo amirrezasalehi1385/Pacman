@@ -4,5 +4,5 @@
 class Blinky : public Ghost {
 public:
     Blinky();
-    void update(const Pacman& pacman, const Map& map);
+    void update(int level,const Pacman& pacman, const Map& map);
 };

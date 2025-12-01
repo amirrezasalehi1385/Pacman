@@ -56,6 +56,7 @@ void Game::loadSounds() {
     SoundManager::get().loadSound("beginning", "assets/Sounds/pacman_beginning.wav");
     SoundManager::get().loadSound("returningToHouse", "assets/Sounds/pacman-ghostRenturnToHome.wav");
     SoundManager::get().loadSound("siren", "assets/Sounds/pacman-ghostSiren.wav");
+    SoundManager::get().loadSound("fruit", "assets/Sounds/pacman_eatfruit.wav");
 }
 
 void Game::handleLevelComplete() {
@@ -136,6 +137,9 @@ void Game::startNextLevel() {
         g->setFrozen(false);
     }
 
+    fruitManager.reset(currentLevel);
+
+
     updateGhostSpeedForLevel();
 
     updateFrightenedTimeForLevel();
@@ -213,6 +217,11 @@ bool Game::init(const std::string& title, int w, int h) {
     pacman = new Pacman(13 * 16 + 3, 25 * 16 + 11, 26, 26);
     pacman->setWindowManager(&windowManager);
     pacman->loadTextures(textureManager, "assets/Pacman/0.png","assets/Pacman/1.png", "assets/Pacman/2.png");
+
+    fruitManager.init(textureManager, windowManager.getRenderer());
+    fruitManager.loadTextures(textureManager);
+    fruitManager.reset(currentLevel);
+
 
     blinky = new Blinky();
     std::vector<std::string> blinkyTextures = {
@@ -329,7 +338,7 @@ bool Game::init(const std::string& title, int w, int h) {
     ghosts.push_back(pinky);
     ghosts.push_back(inky);
     ghosts.push_back(clyde);
-
+    fruitManager.loadTextures(textureManager);
     for(int i = 1; i < 12; i++) {
         std::string path = "assets/Pacman/pacman_death_" + std::to_string(i) + ".png";
         SDL_Surface* surface = IMG_Load(path.c_str());
@@ -593,7 +602,8 @@ void Game::renderGame() {
     pinky->render(windowManager.getRenderer());
     inky->render(windowManager.getRenderer());
     clyde->render(windowManager.getRenderer());
-
+    fruitManager.render(windowManager.getRenderer());
+    fruitManager.renderHUD(windowManager.getRenderer());
     renderLives();
     renderScore();
 }
@@ -602,7 +612,7 @@ void Game::renderGame() {
 void Game::updateScore(){
     int dotsScore = (pacman->getDotsEaten() * GameRules::SMALL_DOTS_SCORE) +
                     (pacman->getBigDotsEaten() * GameRules::BIG_DOTS_SCORE);
-    int newScore = dotsScore + ghostScore;
+    int newScore = dotsScore + ghostScore + fruitsScore;
 
     static int lastExtraLifeScore = 0;
     if(newScore / 10000 > lastExtraLifeScore / 10000) {
@@ -684,10 +694,10 @@ void Game::updateGhosts(){
         }
     }
     if (isReady) {
-        blinky->update(*pacman, *gameMap);
-        inky->update(*pacman, *blinky, *gameMap);
-        pinky->update(*pacman, *gameMap);
-        clyde->update(*pacman, *gameMap);
+        blinky->update(currentLevel,*pacman, *gameMap);
+        inky->update(currentLevel,*pacman, *blinky, *gameMap);
+        pinky->update(currentLevel,*pacman, *gameMap);
+        clyde->update(currentLevel,*pacman, *gameMap);
     }
 
 }
@@ -763,6 +773,8 @@ void Game::updateFrightened(){
 
 }
 void Game::update() {
+    fruitManager.update(pacman->getDotsEaten() % 225, pacman->getHitbox(), fruitsScore);
+
     if(pacman->getDotsEaten() >= 225 * currentLevel && !levelComplete) {
         for(auto g : ghosts) {
             g->visible = false;
@@ -772,6 +784,7 @@ void Game::update() {
         handleLevelComplete();
         return;
     }
+
 
     updateScore();
     updatePacman();

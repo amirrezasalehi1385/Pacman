@@ -4,8 +4,7 @@
 
 namespace GameRules {
     constexpr float GHOST_SPEED_NORMAL = 1.0f;
-    constexpr float GHOST_SPEED_FRIGHTENED = 1.0f;
-    constexpr float GHOST_SPEED_EATEN = 2.0f;
+    constexpr float GHOST_SPEED_EATEN = 2 * GHOST_SPEED_NORMAL;
     constexpr int PACMAN_SPEED = 2;
 
     constexpr int SMALL_DOTS_SCORE = 10;
@@ -22,26 +21,31 @@ namespace GameRules {
     constexpr int TUNNEL_ROW = 14;
 
     inline float getGhostSpeed(int level) {
-        float speed = 0.75f;
-        float speeds[255];
-        speeds[0] = 0.75f;
-        int j = 1;
-        for (int i = 1; i < 255; i++) {
-            if(j % 5 == 0) {
-                speeds[i] = speeds[i - 1] * 1.2;
-            }else {
-                speeds[i] = speeds[i - 1];
-            }
-            j++;
-        }
-        return speeds[level - 1];
+
+        static const float speeds[] = {
+                0.75f, // L1
+                0.85f, // L2
+                0.85f, // L3
+                0.95f, // L4
+                0.95f, // L5
+                1.05f, // L6
+                1.05f, // L7
+                1.05f, // L8
+                1.15f, // L9
+                1.15f, // L10
+                1.15f, // L11
+                1.15f  // L12+
+        };
+
+        if (level < 1) level = 1;
+        if (level > 12) level = 12;
+
+        return speeds[level - 1] * GHOST_SPEED_NORMAL;
     }
 
+
     inline float getFrightenedSpeed(int level) {
-        if(level == 1) return 0.50f;
-        if(level >= 2 && level <= 4) return 0.55f;
-        if(level >= 5 && level <= 20) return 0.60f;
-        return 0.0f;
+        return getGhostSpeed(level) * 0.5f;
     }
 
 

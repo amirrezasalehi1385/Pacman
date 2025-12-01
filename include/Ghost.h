@@ -29,7 +29,7 @@ public:
     float speed;
     bool loadTextures(TextureManager* texManager, const std::vector<std::string>& paths);
     bool checkCollisionWithPacman(Pacman* pacman);
-    void update(const Map& map);
+    void update(int level,const Map& map);
     void render(SDL_Renderer* renderer);
     void setWindowManager(WindowManager* wm) {
         windowManager = wm;

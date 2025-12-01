@@ -7,7 +7,7 @@ Blinky::Blinky()
     state = SCATTER;
 }
 
-void Blinky::update(const Pacman& pacman, const Map& map) {
+void Blinky::update(int level,const Pacman& pacman, const Map& map) {
     switch(state) {
         case WAIT:
             state = CHASE;
@@ -19,19 +19,19 @@ void Blinky::update(const Pacman& pacman, const Map& map) {
 
         case CHASE:
             setTarget(pacman.getHitbox());
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
 
         case SCATTER:
             setTargetTile(scatterCorner.x, scatterCorner.y);
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
         case FRIGHTENED :
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
         case EATEN:
             setTargetTile(13, 14);
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
     }
 }

@@ -1,7 +1,7 @@
 #ifndef PACMAN_GAMESTATE_H
 #define PACMAN_GAMESTATE_H
 
-#endif //PACMAN_GAMESTATE_H
+#endif
 enum class GameState {
     INTRO,
     MENU,

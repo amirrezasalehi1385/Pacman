@@ -4,5 +4,5 @@
 class Pinky : public Ghost {
 public:
     Pinky();
-    void update(const Pacman& pacman, const Map& map);
+    void update(int level, const Pacman& pacman, const Map& map);
 };

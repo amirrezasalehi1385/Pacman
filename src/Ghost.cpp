@@ -153,7 +153,7 @@ void Ghost::wait() {
 
 //---------------- Update ----------------
 
-void Ghost::update(const Map& map) {
+void Ghost::update(int level,const Map& map) {
     if(frozen) return;
 
     switch(state) {
@@ -170,13 +170,13 @@ void Ghost::update(const Map& map) {
 
         case CHASE:
         case SCATTER:
-            speed = normalSpeed;
+            speed = GameRules::getGhostSpeed(level);
             canGotoGhostHouse = false;
             updateChaseScatter(map);
             break;
 
         case FRIGHTENED:
-            speed = GameRules::GHOST_SPEED_FRIGHTENED;
+            speed = GameRules::getFrightenedSpeed(level);
             canGotoGhostHouse = false;
             updateFrightened(map);
             break;
@@ -186,7 +186,7 @@ void Ghost::update(const Map& map) {
             canGotoGhostHouse = true;
             updateChaseScatter(map);
             if(currentTile.x == 13 && currentTile.y == 14) {
-                speed = 1.0f;
+                speed = GameRules::getGhostSpeed(level);
                 setMode(EXIT);
             }
             break;

@@ -5,7 +5,7 @@ Inky::Inky()
     scatterCorner = {27,30};
 }
 
-void Inky::update(const Pacman& pacman, const Ghost& blinky, const Map& map) {
+void Inky::update(int level,const Pacman& pacman, const Ghost& blinky, const Map& map) {
     switch(state) {
         case WAIT:
             wait();
@@ -48,21 +48,21 @@ void Inky::update(const Pacman& pacman, const Ghost& blinky, const Map& map) {
             int targetY = centerY + vecY;
             setTargetTile(targetX, targetY);
 
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
         }
 
         case SCATTER:
             setTargetTile(scatterCorner.x, scatterCorner.y);
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
         case FRIGHTENED :
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
         case EATEN:
             setTargetTile(13.5, 14);
 
-            Ghost::update(map);
+            Ghost::update(level,map);
             break;
 
     }

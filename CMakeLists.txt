@@ -56,6 +56,10 @@ add_executable(Pacman main.cpp
         src/SoundManager.cpp
         include/GameRules.h
         include/GameState.h
+        include/Fruit.h
+        src/Fruit.cpp
+        include/FruitManager.h
+        src/FruitManager.cpp
 )
 
 target_include_directories(Pacman PRIVATE
