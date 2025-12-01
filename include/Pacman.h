@@ -25,6 +25,7 @@ public:
     void setBigDotsEaten(int x);
     int getBigDotsEaten() const;
     void setPosition(int x, int y);
+    void renderHitbox(SDL_Renderer* renderer);
     void resetAnimation();
     void setDirection(Direction dir) { currentDir = dir; }
     void setWindowManager(WindowManager* wm) {

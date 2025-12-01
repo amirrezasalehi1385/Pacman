@@ -38,7 +38,6 @@ add_executable(Pacman main.cpp
         include/Pacman.h
         src/Pacman.cpp
         include/Ghost.h
-        include/Utils.h
         include/Blinky.h
         include/Pinky.h
         include/Inky.h
@@ -50,14 +49,10 @@ add_executable(Pacman main.cpp
         include/GhostState.h
         src/Inky.cpp
         src/Clyde.cpp
-        include/GhostManager.h
-        src/GhostManager.cpp
         include/SoundManager.h
         src/SoundManager.cpp
         include/GameRules.h
         include/GameState.h
-        include/Fruit.h
-        src/Fruit.cpp
         include/FruitManager.h
         src/FruitManager.cpp
 )

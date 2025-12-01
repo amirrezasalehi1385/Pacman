@@ -8,14 +8,6 @@
 #include <unordered_map>
 
 class WindowManager {
-private:
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-
-    std::unordered_map<std::string, Mix_Chunk*> sounds;
-    std::unordered_map<std::string, Mix_Music*> musics;
-    std::unordered_map<std::string, int> soundChannels;
-
 public:
     WindowManager();
     ~WindowManager();
@@ -24,6 +16,14 @@ public:
     void clear();
     void present();
     SDL_Renderer* getRenderer() const;
+
+private:
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+
+    std::unordered_map<std::string, Mix_Chunk*> sounds;
+    std::unordered_map<std::string, Mix_Music*> musics;
+    std::unordered_map<std::string, int> soundChannels;
 };
 
 #endif

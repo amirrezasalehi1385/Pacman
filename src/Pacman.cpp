@@ -1,6 +1,7 @@
 #include "Pacman.h"
 #include "TextureManager.h"
 #include "SoundManager.h"
+#include "GameRules.h"
 
 Pacman::Pacman(int x, int y, int w, int h)
         : frameIndex(0), frameDir(1), lastTime(SDL_GetTicks()), dotsEaten(0) {
@@ -87,9 +88,11 @@ void Pacman::handleInput(const SDL_Event& event) {
             case SDLK_RIGHT: nextDir = RIGHT; break;
         }
     }
-}void Pacman::move(Map* map, float speed) {
+}
+void Pacman::move(Map* map, float speed) {
     SDL_Rect testHitbox = hitbox;
     SDL_Point nextTile = getTile();
+    int mapWidth = 28 * 16;
 
     switch(nextDir) {
         case UP:    testHitbox.y -= speed; nextTile.y -= 1; break;
@@ -99,9 +102,13 @@ void Pacman::handleInput(const SDL_Event& event) {
         default: break;
     }
 
-    if(nextDir != STOP && !map->checkCollision(testHitbox) && !Map::isInGhostHouse(nextTile.x,nextTile.y)) {
-        currentDir = nextDir;
+    if( nextDir != STOP && !map->checkCollision(testHitbox) && !Map::isInGhostHouse(nextTile.x,nextTile.y)) {
+        if((nextDir == UP || nextDir == DOWN) && Map::isInTunnel(getTile().x,getTile().y)) {
+        }else {
+            currentDir = nextDir;
+        }
     }
+
 
     SDL_Rect nextHitbox = hitbox;
     SDL_Point currNextTile = getTile();
@@ -137,11 +144,11 @@ void Pacman::handleInput(const SDL_Event& event) {
         }
     }
 
-
-
-    int mapWidth = 28 * 16;
-    if(rect.x + rect.w < 0) rect.x = mapWidth;
-    else if(rect.x > mapWidth) rect.x = -rect.w;
+    if(rect.x + rect.w < 0) {
+        rect.x = mapWidth - 1;
+    }else if(rect.x > mapWidth){
+        rect.x = -rect.w + 1;
+    }
 
     updateHitbox();
 }
@@ -152,6 +159,46 @@ void Pacman::resetAnimation() {
     frameDir = 1;
     lastTime = SDL_GetTicks();
 }
+
+void Pacman::renderHitbox(SDL_Renderer* renderer) {
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_RenderDrawRect(renderer, &hitbox);
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    SDL_RenderDrawRect(renderer, &rect);
+    int centerX = rect.x + rect.w / 2;
+    int centerY = rect.y + rect.h / 2;
+    int radius = 8 * GameRules::TILE_SIZE;
+    int thickness = 2;
+
+    SDL_SetRenderDrawColor(renderer, 255, 165, 0, 255);
+
+    for (int r = radius - thickness/2; r <= radius + thickness/2; r++) {
+        int x = r;
+        int y = 0;
+        int err = 0;
+
+        while (x >= y) {
+            SDL_RenderDrawPoint(renderer, centerX + x, centerY + y);
+            SDL_RenderDrawPoint(renderer, centerX + y, centerY + x);
+            SDL_RenderDrawPoint(renderer, centerX - y, centerY + x);
+            SDL_RenderDrawPoint(renderer, centerX - x, centerY + y);
+            SDL_RenderDrawPoint(renderer, centerX - x, centerY - y);
+            SDL_RenderDrawPoint(renderer, centerX - y, centerY - x);
+            SDL_RenderDrawPoint(renderer, centerX + y, centerY - x);
+            SDL_RenderDrawPoint(renderer, centerX + x, centerY - y);
+
+            y += 1;
+            if (err <= 0) {
+                err += 2*y + 1;
+            }
+            if (err > 0) {
+                x -= 1;
+                err -= 2*x + 1;
+            }
+        }
+    }
+}
+
 
 
 SDL_Point Pacman::getTile() const {
@@ -166,3 +213,4 @@ int Pacman::getDotsEaten() const{
 void Pacman::setDotsEaten(int x) {
     dotsEaten = x;
 }
+

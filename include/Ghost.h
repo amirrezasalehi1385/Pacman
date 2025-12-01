@@ -12,8 +12,8 @@ class Ghost {
 public:
     float normalSpeed = GameRules::GHOST_SPEED_NORMAL;
     bool canGotoGhostHouse;
-    void setNormalSpeed(float speed) { normalSpeed = speed; } // ✅ اضافه کن
-
+    void setNormalSpeed(float speed) { normalSpeed = speed; }
+    void renderHitbox(SDL_Renderer* renderer);
     bool readyToExit;
     bool ghostEaten;
     bool endOfFrightening;
@@ -109,12 +109,3 @@ private:
     bool frozen = false;
     void updateHitbox();
 };
-inline SDL_Rect toRect(const SDL_FRect& fr)
-{
-    SDL_Rect r;
-    r.x = (int)fr.x;
-    r.y = (int)fr.y;
-    r.w = (int)fr.w;
-    r.h = (int)fr.h;
-    return r;
-}

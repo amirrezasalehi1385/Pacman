@@ -112,33 +112,38 @@ void FruitManager::update(int dotsEaten, const SDL_Rect& pacHitbox, int& score) 
         if (now - spawnTime > duration) {
             visible = false;
         }
-
         if (SDL_HasIntersection(&rect, &pacHitbox)) {
             SoundManager::get().playOnce("fruit");
             score += scoreValue;
             visible = false;
-
-            // ذخیره میوه خورده شده فقط اگر کمتر از 7 تا باشد
-            if(eatenFruits.size() < 7) {
-                eatenFruits.push_back(currentFruitIndex);
+            eatenFruits.push_back(currentFruitIndex);
+            while (eatenFruits.size() > 7) {
+                eatenFruits.erase(eatenFruits.begin());
             }
         }
+
     }
 }
 
 void FruitManager::renderHUD(SDL_Renderer* renderer) {
-    int startX = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE - 32; // شروع از سمت راست
+    const int maxFruitsOnHUD = 7;
+    while (eatenFruits.size() > maxFruitsOnHUD) {
+        eatenFruits.erase(eatenFruits.begin());
+    }
+
+    int startX = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE - 32; 
     int startY = 576 - 32;
     int spacing = 36;
 
-    for(size_t i = 0; i < eatenFruits.size(); i++) {
+    for (size_t i = 0; i < eatenFruits.size(); i++) {
         int index = eatenFruits[i];
-        if(index >= 0 && index < fruitTextures.size()) {
+        if (index >= 0 && index < fruitTextures.size()) {
             SDL_Rect dst = { startX - (int)i * spacing, startY, 32, 32 };
             SDL_RenderCopy(renderer, fruitTextures[index], nullptr, &dst);
         }
     }
 }
+
 
 
 void FruitManager::render(SDL_Renderer* renderer) {

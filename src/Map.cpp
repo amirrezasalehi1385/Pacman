@@ -9,7 +9,7 @@ void Map::spawnDots() {
     for (int y = 0; y < mapGrid.size(); ++y) {
         for (int x = 0; x < mapGrid[y].size(); ++x) {
             if (mapGrid[y][x] == 0) {
-                if (!(y >= 9 && y <= 22 && x >= 7 && x <= 20) && !(y == 14 && (x <= 5 || x >= 22)) && !(x == 14 && y == 23) ) {
+                if (!(y >= 9 && y <= 19 && x >= 7 && x <= 20) && !(y == 14 && (x <= 5 || x >= 22)) && !((x == 14 || x==13) && y == 23) ) {
                     tileGrid[y][x] = 21;
                     totalDots++;
                     emptyTiles.emplace_back(x,y);
@@ -32,7 +32,6 @@ void Map::resetDots() {
 
     for (int y = 0; y < tileGrid.size(); ++y) {
         for (int x = 0; x < tileGrid[y].size(); ++x) {
-            // اگه dot بود، پاک کن
             if (tileGrid[y][x] == 21 || tileGrid[y][x] == 22) {
                 tileGrid[y][x] = 0;
             }
@@ -171,6 +170,9 @@ void Map::loadLevel1() {
 
 
 }
+bool Map::isInTunnel(int x, int y) {
+    return y == 14 && (x <= 3 || x >= 24);
+}
 
 bool Map::checkCollision(const SDL_Rect& hitbox) const
 {
@@ -269,6 +271,7 @@ void Map::loadMap(const std::vector<std::vector<int>>& mapData) {
 }
 
 void Map::render() {
+
     for(int row=0; row<tileGrid.size(); ++row){
         for(int col=0; col<tileGrid[row].size(); ++col){
             int texIndex = tileGrid[row][col];

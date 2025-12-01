@@ -2,7 +2,7 @@
 #include "Blinky.h"
 
 Blinky::Blinky()
-        : Ghost(14, 10.5, 28, 28) {
+        : Ghost(14, 11, 28, 28) {
     scatterCorner = {27,0};
     state = SCATTER;
 }

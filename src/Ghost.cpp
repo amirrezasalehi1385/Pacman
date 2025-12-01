@@ -8,7 +8,7 @@
 #define MAP_HEIGHT_TILE GameRules::MAP_HEIGHT_TILES
 Ghost::Ghost(float initX, float initY, int w, int h)
         : initialTileX(initX), initialTileY(initY), w(w), h(h), pixelsMoved(0.0f),
-          posX(initX * 16 + 8 - w / 2), posY(initY * 16 + 3*16 + 8 - h/2),
+          posX(initX * 16 + 8 - w / 2), posY(initY * 16 + 3*16  - h/2),
           speed(GameRules::GHOST_SPEED_NORMAL)
 {
     endOfFrightening = false;
@@ -30,6 +30,18 @@ Ghost::Ghost(float initX, float initY, int w, int h)
     scoreDisplayDuration = 1000;
     currentScoreValue = 0;
 }
+
+
+
+void Ghost::renderHitbox(SDL_Renderer* renderer) {
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_RenderDrawRect(renderer, &hitbox);
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    SDL_RenderDrawRect(renderer, &rect);
+
+}
+
+
 
 //---------------- Score Handling ----------------
 
@@ -117,12 +129,9 @@ void Ghost::reset() {
     state = WAIT;
     pixelsMoved = 0.0f;
     currentDirection = STOP;
-
-    // ✅ سرعت عادی رو برگردون (نه GHOST_SPEED_NORMAL)
     speed = normalSpeed;
-
     posX = initialTileX * 16 + 8 - w/2;
-    posY = initialTileY * 16 + 3*16 + 8 - h/2;
+    posY = initialTileY * 16 + 3*16  - h/2;
     rect = {static_cast<int>(posX) - 8, static_cast<int>(posY) + 8, w, h};
     updateHitbox();
     currentTile = {initialTileX, initialTileY};
@@ -136,7 +145,7 @@ void Ghost::wait() {
     switch (currentDirection) {
         case UP: rect.y -= 1; currentEye = eyeUp; break;
         case DOWN: rect.y += 1; currentEye = eyeDown;
-        break; default: break;
+            break; default: break;
     }
     pixelsMoved += 1;
     if(pixelsMoved >= TILE_SIZE) {
@@ -442,7 +451,6 @@ void Ghost::render(SDL_Renderer* renderer) {
     if(getState() == EATEN) {
         if(currentEye) SDL_RenderCopy(renderer, currentEye, nullptr, &rect);
     }
-    renderTarget(renderer);
 }
 
 //---------------- Load Textures ----------------
@@ -481,13 +489,49 @@ bool Ghost::loadTextures(TextureManager* texManager, const std::vector<std::stri
 }
 // -------------------- Target Handling --------------------
 bool Ghost::loadTargetTexture(SDL_Renderer* renderer, const std::string& path) {
-    if(targetTexture) SDL_DestroyTexture(targetTexture);
-    targetTexture = SDL_CreateTextureFromSurface(renderer, SDL_LoadBMP(path.c_str()));
-    return targetTexture != nullptr;
+    if(targetTexture) {
+        SDL_DestroyTexture(targetTexture);
+        targetTexture = nullptr;
+    }
+
+    SDL_Surface* surf = IMG_Load(path.c_str());
+    if(!surf) {
+        SDL_Log("Failed to load target image %s: %s", path.c_str(), IMG_GetError());
+        return false;
+    }
+
+    targetTexture = SDL_CreateTextureFromSurface(renderer, surf);
+    SDL_FreeSurface(surf);
+
+    if(!targetTexture) {
+        SDL_Log("Failed to create texture from %s: %s", path.c_str(), SDL_GetError());
+        return false;
+    }
+
+    return true;
 }
 
+
 void Ghost::renderTarget(SDL_Renderer* renderer) {
-    if(targetTexture) SDL_RenderCopy(renderer, targetTexture, nullptr, &rect);
+    if (!targetTexture) return;
+
+    SDL_Rect targetRect;
+    targetRect.x = static_cast<int>(targetTile.x * TILE_SIZE) + TILE_SIZE / 4;
+    targetRect.y = static_cast<int>(targetTile.y * TILE_SIZE) + TILE_SIZE / 4;
+    targetRect.w = TILE_SIZE / 2;
+    targetRect.h = TILE_SIZE / 2;
+
+    int ghostCenterX = rect.x + rect.w / 2;
+    int ghostCenterY = rect.y + rect.h / 2;
+    int targetCenterX = targetRect.x + targetRect.w / 2;
+    int targetCenterY = targetRect.y + targetRect.h / 2;
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+    SDL_RenderDrawLine(renderer, ghostCenterX, ghostCenterY, targetCenterX, targetCenterY);
+    SDL_RenderDrawLine(renderer, ghostCenterX, ghostCenterY+1, targetCenterX, targetCenterY+1);
+
+    SDL_RenderCopy(renderer, targetTexture, nullptr, &targetRect);
 }
 
 void Ghost::clearTargetTexture() {
@@ -509,10 +553,7 @@ void Ghost::setMode(GhostState mode) {
 
 // -------------------- Hitbox --------------------
 void Ghost::updateHitbox() {
-    hitbox.x = static_cast<int>(posX);
-    hitbox.y = static_cast<int>(posY);
-    hitbox.w = w;
-    hitbox.h = h;
+    hitbox = rect;
 }
 
 SDL_Rect* Ghost::getHitBox() { return &hitbox; }

@@ -24,12 +24,19 @@ public:
     void setMazeFlash(bool white);
     int totalDots = 0;
     void resetDots();
+    void updateBlink();
+    void setBigDotsFlash(bool active);
+    bool mazeFlash = false;
+    bool bigDotBlinkState = false;
+    Uint32 lastBlinkTime = 0;
+    static bool isInTunnel(int x, int y) ;
 private:
-    std::vector<SDL_Texture*> texturesBlue;   // تکسچرهای آبی
-    std::vector<SDL_Texture*> texturesWhite;  // تکسچرهای سفید
-    std::vector<SDL_Texture*>* currentTextures; // اشاره‌گر به ست فعلی
+    std::vector<SDL_Texture*> texturesBlue;
+    std::vector<SDL_Texture*> texturesWhite;
+    std::vector<SDL_Texture*>* currentTextures;
 
-    Uint8 mazeR = 33, mazeG = 33, mazeB = 255;    std::vector<std::string> texturePaths;
+    Uint8 mazeR = 33, mazeG = 33, mazeB = 255;
+    std::vector<std::string> texturePaths;
     std::vector<SDL_Texture*> textures;
     TextureManager* textureManager;
     SDL_Renderer* renderer;
