@@ -2,7 +2,7 @@
 
 Clyde::Clyde()
         : Ghost(16, 14, 28, 28) {
-    scatterCorner = {0,30};
+    scatterCorner = {0,33};
 }
 
 void Clyde::update(int level,const Pacman& pacman, const Map& map) {

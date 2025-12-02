@@ -6,14 +6,26 @@ Each ghost has a unique targeting algorithm inspired by the original Pac-Man gam
 
 ---
 
+## Features
+- Classic Pac-Man gameplay mechanics
+- 4 unique ghost AI behaviors
+- Level progression system
+- Sound effects and animations
+- Fruit bonus system
+
+
+## Controls
+- **Arrow Keys**: Move Pac-Man (Up, Down, Left, Right)
+- **ESC**: Pause/Menu
+
+---
+
 ## Ghost Movement Algorithm
 
-Each ghost has a different targeting behavior based on Pac-Man’s position and direction. Below is a summary of each ghost’s unique logic:
-
+Each ghost has a different targeting behavior based on Pac-Man's position and direction...
 ### Blinky (Red Ghost)
 - Directly chases Pac-Man by targeting his **current position**.
 - Aggressive and constantly pursues the player.
-  
 <img width="335" height="424" alt="image" src="https://github.com/user-attachments/assets/e68007ba-cbb2-48c2-bd4a-69763511093a" />
 
 ---
@@ -22,7 +34,6 @@ Each ghost has a different targeting behavior based on Pac-Man’s position and 
 - Targets **four tiles ahead** of Pac-Man in the direction he is currently moving.
 - Attempts to **ambush Pac-Man** by predicting his future position.
 - Does not target Pac-Man directly, but aims to cut him off.
-  
 <img width="336" height="408" alt="image" src="https://github.com/user-attachments/assets/f9554887-71a0-49b5-a77d-bb71a03b9cb4" />
 
 ---
@@ -66,7 +77,16 @@ Each ghost can be in one of several behavioral states during the game:
   - Ghosts stop chasing Pac-Man and head toward their **own corner of the maze**.  
   - This mode is **temporary**, allowing players a brief relief and helping to **mix the gameplay flow**.
 
-
+```cpp
+enum GhostState {
+    WAIT,
+    EXIT,
+    CHASE,
+    SCATTER,
+    FRIGHTENED,
+    EATEN
+};
+```
 ---
 
 ## Ghost Modes Explained
@@ -79,8 +99,25 @@ Each ghost can be in one of several behavioral states during the game:
   - **Clyde** → Bottom-left corner  
 - Gives players a break from direct chasing.
 - Useful for creating rhythm in the gameplay.
+
 <img width="333"  alt="image" src="https://github.com/user-attachments/assets/27a22f78-11a8-4d38-8a74-509052cddcca" />
 
+### Blinky
+```cpp
+    scatterCorner = {27,0}; 
+```
+### Pinky
+```cpp
+    scatterCorner = {0,0}; 
+```
+### Inky
+```cpp
+    scatterCorner = {27,30}; 
+```
+### Clyde
+```cpp
+    scatterCorner = {0,30}; 
+```
 ### Chase Mode
 - Each ghost uses its **specific targeting algorithm** to hunt Pac-Man.
 - These targeting patterns were designed to **complement each other**, making it difficult to predict or escape all of them at once.
@@ -135,32 +172,83 @@ When Pac-Man eats a ghost during **Frightened mode**, the score increases for ea
 
 When Pac-Man eats a **power pellet**, all ghosts enter **FRIGHTENED mode** for a limited duration:
 
-- **Behavior changes**:
-  - Ghosts **move slower** (`GHOST_SPEED_FRIGHTENED`) than normal.
-  - Ghosts **flee from Pac-Man** instead of chasing him.
-  - Movement becomes **randomized**, making their path less predictable.
+### Behavior Changes
 
-- **Interaction with Pac-Man**:
-  - If Pac-Man collides with a ghost in this state:
-    - The ghost is marked as **`ghostEaten = true`**.
-    - It enters the **EATEN state** and returns to the ghost house.
-    - Pac-Man earns **increasing points** depending on how many ghosts are eaten consecutively:
+- Ghosts **move slower** than normal (see speed table below).
+- Ghosts **flee from Pac-Man** instead of chasing him.
+- Movement becomes **randomized**, making their path less predictable.
 
-    | Ghost eaten | Score | Notes |
-        |-------------|-------|-------|
-    | 1st ghost   | 200   | First ghost eaten in current FRIGHTENED period |
-    | 2nd ghost   | 400   | Second ghost eaten in same FRIGHTENED period |
-    | 3rd ghost   | 800   | Third ghost eaten in same FRIGHTENED period |
-    | 4th ghost   | 1600  | Fourth ghost eaten in same FRIGHTENED period |
+### Speed Mechanics
 
-- **Visual cues**:
-  - Ghosts **turn blue** to indicate FRIGHTENED mode.
-  - Near the end of FRIGHTENED mode, ghosts **flash between blue and white** to warn the player that normal behavior will resume soon.
+Ghost speed during FRIGHTENED mode varies by level:
 
-- **Duration**:
-  - Controlled by `FRIGHTENED_TIME` per level.
-  - Once time expires, ghosts **return to CHASE or SCATTER mode** depending on the cycle.
+| Level Range | Speed Multiplier | Effective Speed |
+|-------------|------------------|-----------------|
+| 1           | 50% of normal    | `GHOST_SPEED_NORMAL × 0.5` |
+| 2-4         | 55% of normal    | `GHOST_SPEED_NORMAL × 0.55` |
+| 5-20        | 60% of normal    | `GHOST_SPEED_NORMAL × 0.6` |
+| 21+         | 0% (no movement) | Ghosts cannot move in FRIGHTENED mode |
+```cpp
+inline float getFrightenedSpeed(int level) {
+    float c;
+    if(level <= 1) c = 0.5f;
+    else if(level <= 4) c = 0.55f;
+    else if(level <= 20) c = 0.6f;
+    else c = 0.0f;
+    return GHOST_SPEED_NORMAL * c;
+}
+```
+> **Note**: From level 21 onwards, ghosts become invulnerable to being eaten, as they cannot enter FRIGHTENED mode effectively.
 
+### Duration
+
+FRIGHTENED mode duration decreases as levels progress:
+
+| Level Range | Duration (ms) | Duration (seconds) |
+|-------------|---------------|-------------------|
+| 1           | 6000          | 6.0s              |
+| 2-5         | 5000          | 5.0s              |
+| 6-10        | 4000          | 4.0s              |
+| 11-14       | 3000          | 3.0s              |
+| 15-18       | 2000          | 2.0s              |
+| 19-21       | 1000          | 1.0s              |
+| 22+         | 0             | No FRIGHTENED mode |
+```cpp
+inline Uint32 getFrightenedTime(int level) {
+    if(level == 1) return 6000;
+    if(level >= 2 && level <= 5) return 5000;
+    if(level >= 6 && level <= 10) return 4000;
+    if(level >= 11 && level <= 14) return 3000;
+    if(level >= 15 && level <= 18) return 2000;
+    if(level >= 19 && level <= 21) return 1000;
+    if(level >= 22) return 0;
+    return 6000; // Default fallback
+}
+```
+Once time expires, ghosts **return to CHASE or SCATTER mode** depending on the current behavior cycle.
+
+### Interaction with Pac-Man
+
+If Pac-Man collides with a ghost in FRIGHTENED mode:
+
+- The ghost is marked as **`ghostEaten = true`**.
+- It enters the **EATEN state** and returns to the ghost house.
+- Pac-Man earns **increasing points** based on consecutive ghost captures:
+
+| Ghost Eaten | Score | Notes |
+|-------------|-------|-------|
+| 1st ghost   | 200   | First ghost eaten in current FRIGHTENED period |
+| 2nd ghost   | 400   | Second ghost eaten in same FRIGHTENED period |
+| 3rd ghost   | 800   | Third ghost eaten in same FRIGHTENED period |
+| 4th ghost   | 1600  | Fourth ghost eaten in same FRIGHTENED period |
+
+> **Strategy tip**: The scoring multiplier resets when FRIGHTENED mode ends or when a new power pellet is consumed.
+
+### Visual Cues
+
+- Ghosts **turn blue** to indicate FRIGHTENED mode is active.
+- Near the end of FRIGHTENED mode, ghosts **flash between blue and white** to warn the player that normal behavior will resume soon.
+- In **EATEN state**, ghosts appear as eyes only and move quickly back to the ghost house.
 ### Example (GIF)
 
 <img src="screenshots/ghostFrightened.gif" alt="Frightened Ghost Animation" width="320">
@@ -174,4 +262,77 @@ Ghosts alternate between **CHASE** and **SCATTER** modes based on `GHOST_CYCLES`
 
 ```cpp
 constexpr std::array<Uint32, 7> GHOST_CYCLES = { 7000, 20000, 7000, 20000, 5000, 20000, 5000 };
+```
+## Fruit System
 
+Fruits (bonus items) appear twice per level at predetermined locations and provide bonus points when collected by Pac-Man.
+
+### Fruit Types by Level
+
+Each level features a different fruit with increasing point values:
+
+| Level | Fruit | Score | Icon                                                  |
+|-------|-------|-------|-------------------------------------------------------|
+| 1 | Cherry | 100 | ![Cherry](cmake-build-debug/assets/fruits/cherry.png) |
+| 2 | Strawberry | 300 | ![Strawberry](cmake-build-debug/assets/fruits/strawberry.png)           |
+| 3-4 | Orange | 500 | ![Orange](cmake-build-debug/assets/fruits/orange.png)                   |
+| 5-6 | Apple | 700 | ![Apple](cmake-build-debug/assets/fruits/apple.png)                     |
+| 7-8 | Melon | 1000 | ![Melon](cmake-build-debug/assets/fruits/melon.png)                     |
+| 9-10 | Galaxian | 2000 | ![Galaxian](cmake-build-debug/assets/fruits/galaxian.png)               |
+| 11-12 | Bell | 3000 | ![Bell](cmake-build-debug/assets/fruits/bell.png)                       |
+| 13+ | Key | 5000 | ![Key](cmake-build-debug/assets/fruits/key.png)                         |
+
+### Spawn Mechanics
+
+Fruits appear **twice per level** based on dots eaten:
+
+- **First spawn**: After eating **70 dots** (`spawn1`)
+- **Second spawn**: After eating **170 dots** (`spawn2`)
+
+**Spawn location**: Center of the maze at `(13, 19.5)` tiles
+
+**Duration**: Each fruit remains visible for **9-10 seconds** (`duration = 9000-10000ms`)
+
+### Collection
+
+- When Pac-Man's hitbox intersects with the fruit, it is instantly collected
+- Points are added to the score
+- A collection sound effect plays (`"fruit"`)
+- The fruit disappears from the maze
+
+### HUD Display
+
+Collected fruits are displayed at the **bottom-right corner** of the screen:
+
+- Shows the **last 7 fruits** collected in the current game session
+- Arranged horizontally from right to left
+- Each fruit icon is **32×32 pixels** with **36px spacing**
+- Position: `(MAP_WIDTH - 32, 576 - 32)` starting point
+
+### Implementation Notes
+```cpp
+// Fruit selection by level
+void FruitManager::selectFruitByLevel(int level);
+
+// Update spawn logic and collision detection
+void FruitManager::update(int dotsEaten, const SDL_Rect& pacHitbox, int& score);
+
+// Render active fruit on maze
+void FruitManager::render(SDL_Renderer* renderer);
+
+// Render collected fruits in HUD
+void FruitManager::renderHUD(SDL_Renderer* renderer);
+```
+
+**Key files**: `FruitManager.cpp`, `FruitManager.h`
+
+### State Management
+
+The fruit system tracks:
+- `visible`: Whether a fruit is currently displayed
+- `spawned1`, `spawned2`: Whether each spawn event has occurred
+- `spawnTime`: Timestamp of last spawn (for duration tracking)
+- `currentFruitIndex`: Index of the current fruit type (0-7)
+- `eatenFruits`: History of collected fruits for HUD display
+
+**Reset behavior**: When a new level starts, all spawn flags are reset, but the fruit history persists across levels for the HUD.

@@ -3,7 +3,7 @@
 
 Blinky::Blinky()
         : Ghost(14, 11, 28, 28) {
-    scatterCorner = {27,0};
+    scatterCorner = {27,3};
     state = SCATTER;
 }
 

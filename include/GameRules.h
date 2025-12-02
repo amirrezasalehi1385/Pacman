@@ -57,7 +57,7 @@ namespace GameRules {
         if(level >= 15 && level <= 18) return 2000;
         if(level >= 19 && level <= 21) return 1000;
         if(level >= 22) return 0;
-        return 6000; // fallback
+        return 6000;
     }
 
 }

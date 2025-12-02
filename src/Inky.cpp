@@ -2,7 +2,7 @@
 
 Inky::Inky()
         : Ghost(12, 14, 28, 28) {
-    scatterCorner = {27,30};
+    scatterCorner = {27,33};
 }
 
 void Inky::update(int level,const Pacman& pacman, const Ghost& blinky, const Map& map) {

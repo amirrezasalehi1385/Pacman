@@ -2,7 +2,7 @@
 
 Pinky::Pinky()
         : Ghost(14, 14, 28, 28) {
-    scatterCorner = {0,0};
+    scatterCorner = {0,3};
 }
 
 void Pinky::update(int level, const Pacman& pacman, const Map& map) {
