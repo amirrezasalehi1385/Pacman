@@ -271,16 +271,16 @@ Fruits (bonus items) appear twice per level at predetermined locations and provi
 
 Each level features a different fruit with increasing point values:
 
-| Level | Fruit | Score | Icon                                                  |
-|-------|-------|-------|-------------------------------------------------------|
-| 1 | Cherry | 100 | ![Cherry](cmake-build-debug/assets/fruits/cherry.png) |
-| 2 | Strawberry | 300 | ![Strawberry](cmake-build-debug/assets/fruits/strawberry.png)           |
-| 3-4 | Orange | 500 | ![Orange](cmake-build-debug/assets/fruits/orange.png)                   |
-| 5-6 | Apple | 700 | ![Apple](cmake-build-debug/assets/fruits/apple.png)                     |
-| 7-8 | Melon | 1000 | ![Melon](cmake-build-debug/assets/fruits/melon.png)                     |
-| 9-10 | Galaxian | 2000 | ![Galaxian](cmake-build-debug/assets/fruits/galaxian.png)               |
-| 11-12 | Bell | 3000 | ![Bell](cmake-build-debug/assets/fruits/bell.png)                       |
-| 13+ | Key | 5000 | ![Key](cmake-build-debug/assets/fruits/key.png)                         |
+| Level | Fruit | Score | Icon                                            |
+|-------|-------|-------|-------------------------------------------------|
+| 1 | Cherry | 100 | ![Cherry](screenshots/fruits/cherry.png)        |
+| 2 | Strawberry | 300 | ![Strawberry](screenshots/fruits/strawberry.png) |
+| 3-4 | Orange | 500 | ![Orange](screenshots/fruits/orange.png)         |
+| 5-6 | Apple | 700 | ![Apple](screenshots/fruits/apple.png)           |
+| 7-8 | Melon | 1000 | ![Melon](screenshots/fruits/melon.png)           |
+| 9-10 | Galaxian | 2000 | ![Galaxian](screenshots/fruits/galaxian.png)     |
+| 11-12 | Bell | 3000 | ![Bell](screenshots/fruits/bell.png)             |
+| 13+ | Key | 5000 | ![Key](screenshots/fruits/key.png)               |
 
 ### Spawn Mechanics
 
