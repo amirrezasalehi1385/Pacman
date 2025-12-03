@@ -55,6 +55,7 @@ add_executable(Pacman main.cpp
         include/GameState.h
         include/FruitManager.h
         src/FruitManager.cpp
+        include/GhostType.h
 )
 
 target_include_directories(Pacman PRIVATE

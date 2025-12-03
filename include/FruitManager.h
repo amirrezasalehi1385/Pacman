@@ -31,7 +31,7 @@ private:
     bool showScorePopup = false;
     Uint32 scorePopupStart = 0;
     SDL_Rect scorePopupRect;
-    int scorePopupIndex = -1;   // index تصویر امتیاز (100, 300 ...)
+    int scorePopupIndex = -1;
 
 
 

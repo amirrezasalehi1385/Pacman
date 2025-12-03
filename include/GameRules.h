@@ -22,7 +22,7 @@ namespace GameRules {
 
     // ------------------- Debug -------------------
     static bool SHOW_DEBUG = false; // Show hitboxes/targets when true
-    static bool PLAY_SOUND = false; // Show hitboxes/targets when true
+    static bool PLAY_SOUND = true; // Show hitboxes/targets when true
     // ------------------- Map info -------------------
     constexpr int TILE_SIZE = 16;
     constexpr int MAP_WIDTH_TILES = 28;

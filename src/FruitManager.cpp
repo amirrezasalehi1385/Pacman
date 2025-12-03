@@ -70,7 +70,6 @@ bool FruitManager::loadTextures(TextureManager* texManager) {
     return true;
 }
 
-
 void FruitManager::reset(int level) {
     visible = false;
     spawned1 = false;
@@ -82,7 +81,6 @@ void FruitManager::reset(int level) {
 
     printf("[FruitManager] Reset for level %d\n", level);
 }
-
 void FruitManager::selectFruitByLevel(int level) {
     int index = 0;
 
@@ -104,6 +102,7 @@ void FruitManager::selectFruitByLevel(int level) {
     }
 }
 
+
 void FruitManager::renderScore(SDL_Renderer* renderer) {
     if (!showScorePopup || scorePopupIndex < 0) return;
 
@@ -116,7 +115,43 @@ void FruitManager::renderScore(SDL_Renderer* renderer) {
         showScorePopup = false;
     }
 }
+void FruitManager::renderHUD(SDL_Renderer* renderer) {
+    const int maxFruitsOnHUD = 7;
+    while (eatenFruits.size() > maxFruitsOnHUD) {
+        eatenFruits.erase(eatenFruits.begin());
+    }
 
+    int startX = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE - 32;
+    int startY = 576 - 32;
+    int spacing = 36;
+
+    for (size_t i = 0; i < eatenFruits.size(); i++) {
+        int index = eatenFruits[i];
+        if (index >= 0 && index < fruitTextures.size()) {
+            SDL_Rect dst = { startX - (int)i * spacing, startY, 32, 32 };
+            SDL_RenderCopy(renderer, fruitTextures[index], nullptr, &dst);
+        }
+    }
+}
+void FruitManager::render(SDL_Renderer* renderer) {
+    if (visible && currentFruitIndex >= 0 && currentFruitIndex < fruitTextures.size()) {
+        SDL_RenderCopy(renderer, fruitTextures[currentFruitIndex], nullptr, &rect);
+    }
+    renderScore(renderer);
+
+}
+
+
+void FruitManager::pauseFruit() {
+    if(visible && spawnTime > 0) {
+        Uint32 now = SDL_GetTicks();
+        Uint32 elapsed = now - spawnTime;
+        if(elapsed < duration) {
+            pausedTimeRemaining = duration - elapsed;
+            isPaused = true;
+        }
+    }
+}
 
 void FruitManager::update(int dotsEaten, const SDL_Rect& pacHitbox, int& score) {
     if(isPaused && visible) {
@@ -152,6 +187,7 @@ void FruitManager::update(int dotsEaten, const SDL_Rect& pacHitbox, int& score) 
         }
 
         if(SDL_HasIntersection(&rect, &pacHitbox)) {
+            SoundManager::get().playOnce("fruit");
             visible = false;
             score += scoreValue;
             eatenFruits.push_back(currentFruitIndex);
@@ -164,40 +200,3 @@ void FruitManager::update(int dotsEaten, const SDL_Rect& pacHitbox, int& score) 
     }
 }
 
-void FruitManager::renderHUD(SDL_Renderer* renderer) {
-    const int maxFruitsOnHUD = 7;
-    while (eatenFruits.size() > maxFruitsOnHUD) {
-        eatenFruits.erase(eatenFruits.begin());
-    }
-
-    int startX = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE - 32; 
-    int startY = 576 - 32;
-    int spacing = 36;
-
-    for (size_t i = 0; i < eatenFruits.size(); i++) {
-        int index = eatenFruits[i];
-        if (index >= 0 && index < fruitTextures.size()) {
-            SDL_Rect dst = { startX - (int)i * spacing, startY, 32, 32 };
-            SDL_RenderCopy(renderer, fruitTextures[index], nullptr, &dst);
-        }
-    }
-}
-void FruitManager::pauseFruit() {
-    if(visible && spawnTime > 0) {
-        Uint32 now = SDL_GetTicks();
-        Uint32 elapsed = now - spawnTime;
-        if(elapsed < duration) {
-            pausedTimeRemaining = duration - elapsed;
-            isPaused = true;
-        }
-    }
-}
-
-
-void FruitManager::render(SDL_Renderer* renderer) {
-    if (visible && currentFruitIndex >= 0 && currentFruitIndex < fruitTextures.size()) {
-        SDL_RenderCopy(renderer, fruitTextures[currentFruitIndex], nullptr, &rect);
-    }
-    renderScore(renderer);
-
-}

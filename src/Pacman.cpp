@@ -19,6 +19,7 @@ bool Pacman::loadTextures(TextureManager* texManager,
     frames[2] = texManager->loadTexture(openPath);
     return frames[0] && frames[1] && frames[2];
 }
+
 void Pacman::update() {
     if(isFrozenForGhostScore) {
         return;
@@ -34,45 +35,6 @@ void Pacman::update() {
     if(!isAlive) return;
     updateHitbox();
 }
-
-double Pacman::getAngle() const {
-    switch(currentDir) {
-        case UP:    return 270;
-        case DOWN:  return 90;
-        case LEFT:  return 180;
-        case RIGHT: return 0;
-        default:    return 0;
-    }
-}
-
-void Pacman::render(SDL_Renderer* renderer) {
-    if(!visible || isFrozenForGhostScore) return;
-    SDL_Texture* tex = frames[frameIndex];
-    double angle = getAngle();
-    if(tex) SDL_RenderCopyEx(renderer, tex, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);
-}
-
-
-void Pacman::cleanup() {
-    for(int i=0;i<3;i++) if(frames[i]) {
-            SDL_DestroyTexture(frames[i]);
-            frames[i] = nullptr;
-        }
-}
-
-SDL_Rect Pacman::getHitbox() const { return hitbox; }
-
-void Pacman::setPosition(int x, int y) {
-    rect.x = x;
-    rect.y = y;
-    updateHitbox();
-}
-int Pacman::getBigDotsEaten() const{
-    return bigDotsEaten;
-};
-void Pacman::setBigDotsEaten(int x){
-    bigDotsEaten = x;
-}
 void Pacman::updateHitbox() {
     int hbSize = 14;
     hitbox.w = hbSize;
@@ -80,6 +42,58 @@ void Pacman::updateHitbox() {
     hitbox.x = rect.x + (rect.w - hbSize) / 2;
     hitbox.y = rect.y + (rect.h - hbSize) / 2;
 
+}
+//=======================Rendering========================================
+void Pacman::render(SDL_Renderer* renderer) {
+    if(!visible || isFrozenForGhostScore) return;
+    SDL_Texture* tex = frames[frameIndex];
+    double angle = getAngle();
+    if(tex) SDL_RenderCopyEx(renderer, tex, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);
+}
+void Pacman::renderHitbox(SDL_Renderer* renderer) {
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_RenderDrawRect(renderer, &hitbox);
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    SDL_RenderDrawRect(renderer, &rect);
+    int centerX = rect.x + rect.w / 2;
+    int centerY = rect.y + rect.h / 2;
+    int radius = 8 * GameRules::TILE_SIZE;
+    int thickness = 2;
+
+    SDL_SetRenderDrawColor(renderer, 255, 165, 0, 255);
+
+    for (int r = radius - thickness/2; r <= radius + thickness/2; r++) {
+        int x = r;
+        int y = 0;
+        int err = 0;
+
+        while (x >= y) {
+            SDL_RenderDrawPoint(renderer, centerX + x, centerY + y);
+            SDL_RenderDrawPoint(renderer, centerX + y, centerY + x);
+            SDL_RenderDrawPoint(renderer, centerX - y, centerY + x);
+            SDL_RenderDrawPoint(renderer, centerX - x, centerY + y);
+            SDL_RenderDrawPoint(renderer, centerX - x, centerY - y);
+            SDL_RenderDrawPoint(renderer, centerX - y, centerY - x);
+            SDL_RenderDrawPoint(renderer, centerX + y, centerY - x);
+            SDL_RenderDrawPoint(renderer, centerX + x, centerY - y);
+
+            y += 1;
+            if (err <= 0) {
+                err += 2*y + 1;
+            }
+            if (err > 0) {
+                x -= 1;
+                err -= 2*x + 1;
+            }
+        }
+    }
+}
+
+void Pacman::cleanup() {
+    for(int i=0;i<3;i++) if(frames[i]) {
+            SDL_DestroyTexture(frames[i]);
+            frames[i] = nullptr;
+        }
 }
 
 void Pacman::handleInput(const SDL_Event& event) {
@@ -92,6 +106,7 @@ void Pacman::handleInput(const SDL_Event& event) {
         }
     }
 }
+//======================Movements and animations============================
 void Pacman::move(Map* map, float speed) {
     SDL_Rect testHitbox = hitbox;
     SDL_Point nextTile = getTile();
@@ -155,55 +170,22 @@ void Pacman::move(Map* map, float speed) {
 
     updateHitbox();
 }
-
-
+double Pacman::getAngle() const {
+    switch(currentDir) {
+        case UP:    return 270;
+        case DOWN:  return 90;
+        case LEFT:  return 180;
+        case RIGHT: return 0;
+        default:    return 0;
+    }
+}
 void Pacman::resetAnimation() {
     frameIndex = 0;
     frameDir = 1;
     lastTime = SDL_GetTicks();
 }
 
-void Pacman::renderHitbox(SDL_Renderer* renderer) {
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_RenderDrawRect(renderer, &hitbox);
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-    SDL_RenderDrawRect(renderer, &rect);
-    int centerX = rect.x + rect.w / 2;
-    int centerY = rect.y + rect.h / 2;
-    int radius = 8 * GameRules::TILE_SIZE;
-    int thickness = 2;
-
-    SDL_SetRenderDrawColor(renderer, 255, 165, 0, 255);
-
-    for (int r = radius - thickness/2; r <= radius + thickness/2; r++) {
-        int x = r;
-        int y = 0;
-        int err = 0;
-
-        while (x >= y) {
-            SDL_RenderDrawPoint(renderer, centerX + x, centerY + y);
-            SDL_RenderDrawPoint(renderer, centerX + y, centerY + x);
-            SDL_RenderDrawPoint(renderer, centerX - y, centerY + x);
-            SDL_RenderDrawPoint(renderer, centerX - x, centerY + y);
-            SDL_RenderDrawPoint(renderer, centerX - x, centerY - y);
-            SDL_RenderDrawPoint(renderer, centerX - y, centerY - x);
-            SDL_RenderDrawPoint(renderer, centerX + y, centerY - x);
-            SDL_RenderDrawPoint(renderer, centerX + x, centerY - y);
-
-            y += 1;
-            if (err <= 0) {
-                err += 2*y + 1;
-            }
-            if (err > 0) {
-                x -= 1;
-                err -= 2*x + 1;
-            }
-        }
-    }
-}
-
-
-
+//=====================Getter & Setters=====================================
 SDL_Point Pacman::getTile() const {
     SDL_Point tile;
     tile.x = (hitbox.x + hitbox.w / 2) / 16;
@@ -216,4 +198,19 @@ int Pacman::getDotsEaten() const{
 void Pacman::setDotsEaten(int x) {
     dotsEaten = x;
 }
+void Pacman::setBigDotsEaten(int x){
+    bigDotsEaten = x;
+}
+int Pacman::getBigDotsEaten() const{
+    return bigDotsEaten;
+};
+void Pacman::setPosition(int x, int y) {
+    rect.x = x;
+    rect.y = y;
+    updateHitbox();
+}
+SDL_Rect Pacman::getHitbox() const { return hitbox; }
+
+
+
 

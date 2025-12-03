@@ -112,4 +112,20 @@ private:
     WindowManager* windowManager;
     bool frozen = false;
     void updateHitbox();
+
+    void updateCurrentTile();
+
+    Direction getReverseDirection() const;
+
+    bool isValidMove(int nx, int ny, const Map &map) const;
+
+    void updatePositionAfterMove();
+
+    void moveInDirection(Direction dir);
+
+    Direction findBestDirection(const Map &map);
+
+    int calculateDistance(int fromX, int fromY, int toX, int toY) const;
+
+    Direction getRandomValidDirection(const Map &map);
 };

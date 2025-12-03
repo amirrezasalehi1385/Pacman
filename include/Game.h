@@ -10,6 +10,7 @@
 #include "GameRules.h"
 #include "GameState.h"
 #include "FruitManager.h"
+#include "GhostType.h"
 
 class Game {
 public:
@@ -60,13 +61,15 @@ public:
     void handleMenuEvent(SDL_Event& event);
     void handleEvent(SDL_Event& event);
     void updateSirenSound();
-
-
+    void handlePlayingStateKeys(SDL_Event& event);
+    void handlePausedStateKeys(SDL_Event& event);
+    void handleKeyboardEvents(SDL_Event& event);
+    void handleMouseEvents(SDL_Event& event);
 private:
     SDL_Texture* pauseButtonTexture = nullptr;
-    SDL_Texture* pauseButtonHoverTexture = nullptr; // اختیاری: نسخه زرد برای hover
+    SDL_Texture* pauseButtonHoverTexture = nullptr;
 
-    int selectedPauseItem = 0;        // 0 = Resume, 1 = Main Menu
+    int selectedPauseItem = 0;
     SDL_Rect resumeButtonRect{0, 0, 0, 0};
     SDL_Rect mainMenuButtonRect{0, 0, 0, 0};
     bool isResumeHovered = false;
@@ -136,4 +139,11 @@ private:
     Uint32 ghostScoreFreezeStart = 0;
     const Uint32 GHOST_SCORE_FREEZE_DURATION = 500;
 
+    SDL_Texture *renderText(const std::string &text, SDL_Color color, TTF_Font *customFont);
+
+    void renderTextCentered(const std::string &text, int y, SDL_Color color, TTF_Font *customFont);
+
+    Ghost *createGhost(GhostType type, const std::vector<std::string> &texturePaths);
+
+    std::vector<std::string> getGhostTextures(const std::string &ghostName);
 };
