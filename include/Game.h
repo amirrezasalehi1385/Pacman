@@ -11,6 +11,7 @@
 #include "GameState.h"
 #include "FruitManager.h"
 #include "GhostType.h"
+#include <cstdio>
 
 class Game {
 public:
@@ -146,4 +147,8 @@ private:
     Ghost *createGhost(GhostType type, const std::vector<std::string> &texturePaths);
 
     std::vector<std::string> getGhostTextures(const std::string &ghostName);
+
+    void saveHighScore();
+
+    void loadHighScore();
 };

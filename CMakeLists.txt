@@ -76,4 +76,4 @@ target_link_libraries(Pacman PRIVATE
         rpcrt4
 )
 
-target_link_options(Pacman PRIVATE -mwindows)
+# target_link_options(Pacman PRIVATE -mwindows)

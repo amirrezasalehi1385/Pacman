@@ -8,6 +8,9 @@
 #include "SoundManager.h"
 #include <SDL2/SDL_ttf.h>
 #include "GhostType.h"
+#include <fstream>
+#include <string>
+
 
 
 Ghost* ghost;
@@ -50,7 +53,6 @@ Game::Game() {
 
 // 2. Initialization & Setup
 bool Game::init(const std::string& title, int w, int h) {
-    totalDots = gameMap->totalDots;
     if(!windowManager.init(title.c_str(), w, h))
         return false;
     loadSounds();
@@ -61,25 +63,23 @@ bool Game::init(const std::string& title, int w, int h) {
     cycleIndex = 0;
     isReady = false;
     readyStartTime = SDL_GetTicks();
-
+    loadHighScore();
     if (TTF_Init() != 0) {
         SDL_Log("TTF_Init Error: %s", TTF_GetError());
         return false;
     }
-
     font = TTF_OpenFont("assets/fonts/Emulogic-zrEw.ttf", 24);
     if(!font) {
         SDL_Log("Failed to load font: %s", TTF_GetError());
         return false;
     }
 
-    SoundManager::get().playOnce("beginning");
     textureManager = new TextureManager(windowManager.getRenderer());
 
 
     gameMap = new Map(textureManager, windowManager.getRenderer());
     gameMap->loadLevel1();
-
+    totalDots = gameMap->totalDots;
     pacman = new Pacman(13 * 16 + 3, 25 * 16 + 11, 26, 26);
     pacman->setWindowManager(&windowManager);
     pacman->loadTextures(textureManager, "assets/Pacman/0.png","assets/Pacman/1.png", "assets/Pacman/2.png");
@@ -481,6 +481,7 @@ void Game::updateScore(){
     }
     if (newScore > highScore) {
         highScore = newScore;
+        saveHighScore();
     }
     setScore(newScore);
 }
@@ -846,7 +847,7 @@ void Game::resumeGame() {
 void Game::gameOver() {
     currentState = GameState::GAME_OVER;
     SoundManager::get().stopAll();
-
+    saveHighScore();
 }
 void Game::quit() {
     if (lives <= 0 && currentState == GameState::PLAYING) {
@@ -983,7 +984,7 @@ void Game::resetGame() {
     inky->readyToExit = false;
     clyde->readyToExit = false;
 
-    SoundManager::get().playOnce("beginning");
+//    SoundManager::get().playOnce("beginning");
 }
 
 // 9. Event Handlers
@@ -1222,4 +1223,20 @@ std::vector<std::string> Game::getGhostTextures(const std::string& ghostName) {
             "assets/scores/800.png",
             "assets/scores/1600.png"
     };
+}
+
+void Game::saveHighScore() {
+    std::ofstream file("assets/highscore.txt");
+    if(file.is_open()) {
+        file << highScore;
+        file.close();
+    }
+}
+
+void Game::loadHighScore() {
+    printf("DEBUG: Trying to load highscore from assets/highscore.txt\n");
+    std::ifstream file("assets/highscore.txt");
+    if(file.is_open() && file >> highScore) {
+        file.close();
+    }
 }
