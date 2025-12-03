@@ -360,9 +360,11 @@ bool Game::init(const std::string& title, int w, int h) {
     ghosts.push_back(pinky);
     ghosts.push_back(inky);
     ghosts.push_back(clyde);
-
+    pauseButtonTexture = textureManager->loadTexture("assets/ui/pause_button.png");
+    pauseButtonHoverTexture = textureManager->loadTexture("assets/ui/pause_button_hover.png"); // اگر داری
+// اگر فقط یکی داری، همون یکی کافیه
+    if (!pauseButtonHoverTexture) pauseButtonHoverTexture = pauseButtonTexture;
     loadTargetTexture();
-
     fruitManager.loadTextures(textureManager);
     for(int i = 1; i < 12; i++) {
         std::string path = "assets/Pacman/pacman_death_" + std::to_string(i) + ".png";
@@ -404,10 +406,12 @@ void Game::loadTargetTexture(){
     inky->loadTargetTexture(windowManager.getRenderer(), "assets/inky_target.png");
 
 }
+
 void Game::resetPacmanPosition() {
     pacman->visible = true;
     pacman->setPosition(13 * 16 + 3, 25 * 16 + 11);
     pacman->isAlive = true;
+    pacman->isFrozenForGhostScore = false;
     currentDir = STOP;
     nextDir = STOP;
     pacman->setDirection(STOP);
@@ -415,11 +419,13 @@ void Game::resetPacmanPosition() {
     pacman->resetAnimation();
 }
 
-
 void Game::handlePacmanDeath() {
+    isPlayingDeathAnimation = true;
+
     SoundManager::get().stop("siren");
     SoundManager::get().stop("siren1");
-    SoundManager::get().stop("siren2");    SoundManager::get().stop("frightened");
+    SoundManager::get().stop("siren2");
+    SoundManager::get().stop("frightened");
     SoundManager::get().stop("returningToHouse");
 
     SoundManager::get().playOnce("death");
@@ -465,8 +471,6 @@ void Game::handlePacmanDeath() {
         SDL_Delay(frameDelay);
     }
 
-
-
     lives--;
 
     if(lives > 0) {
@@ -489,6 +493,8 @@ void Game::handlePacmanDeath() {
             g->reset();
         }
 
+        fruitManager.pauseFruit();
+
         isReady = false;
         readyStartTime = SDL_GetTicks();
         modeStartTime = SDL_GetTicks();
@@ -503,8 +509,15 @@ void Game::handlePacmanDeath() {
 
         resetPacmanPosition();
         SoundManager::get().playOnce("beginning");
-    } else {
-        quit();
+        isPlayingDeathAnimation = false;
+
+    }else {
+        gameOver();
+        SDL_Delay(2000);
+        currentState = GameState::MENU;
+        selectedMenuItem = 0;
+        resetGame();
+        isPlayingDeathAnimation = false;
     }
 }
 
@@ -527,100 +540,96 @@ void Game::renderLives() {
 
 void Game::renderScore() {
     if (!font) return;
-    SDL_Color color = {255, 255, 255, 255};
+
+    SDL_Color white = {255, 255, 255, 255};
+    int tileSize = GameRules::TILE_SIZE;
+    int screenWidth = GameRules::MAP_WIDTH_TILES * tileSize;
+
+    TTF_Font* bigFont = TTF_OpenFont("assets/fonts/Emulogic-zrEw.ttf", 16); // فونت بزرگتر
+    if(bigFont) {
+        std::string highScoreLabel = "HIGH SCORE";
+        SDL_Surface* labelSurface = TTF_RenderText_Solid(bigFont, highScoreLabel.c_str(), white);
+        if(labelSurface) {
+            SDL_Texture* labelTexture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), labelSurface);
+            int labelW, labelH;
+            SDL_QueryTexture(labelTexture, nullptr, nullptr, &labelW, &labelH);
+
+            SDL_Rect labelRect = {
+                    (screenWidth - labelW) / 2,
+                    0,
+                    labelW,
+                    16
+            };
+            SDL_RenderCopy(windowManager.getRenderer(), labelTexture, nullptr, &labelRect);
+            SDL_DestroyTexture(labelTexture);
+            SDL_FreeSurface(labelSurface);
+        }
+        TTF_CloseFont(bigFont);
+    }
+
+    std::string highScoreText = std::to_string(highScore);
+    int digitHeight = 16;
+    int digitSpacing = 4;
+
+    int totalWidth = 0;
+    for(char digit : highScoreText) {
+        std::string digitStr(1, digit);
+        int digitW, digitH;
+        TTF_SizeText(font, digitStr.c_str(), &digitW, &digitH);
+        float scale = static_cast<float>(digitHeight) / digitH;
+        totalWidth += static_cast<int>(digitW * scale) + digitSpacing;
+    }
+    totalWidth -= digitSpacing;
+
+    int startX = (screenWidth - totalWidth) / 2 - 8;
+    int currentX = startX;
+    int yPos = 16;
+
+    for(char digit : highScoreText) {
+        std::string digitStr(1, digit);
+        int digitW, digitH;
+        TTF_SizeText(font, digitStr.c_str(), &digitW, &digitH);
+
+        SDL_Surface* digitSurface = TTF_RenderText_Solid(font, digitStr.c_str(), white);
+        if(digitSurface) {
+            SDL_Texture* digitTexture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), digitSurface);
+            SDL_FreeSurface(digitSurface);
+
+            float scale = static_cast<float>(digitHeight) / digitH;
+            int scaledWidth = static_cast<int>(digitW * scale);
+
+            SDL_Rect digitRect = {currentX, yPos, scaledWidth, digitHeight};
+            SDL_RenderCopy(windowManager.getRenderer(), digitTexture, nullptr, &digitRect);
+            SDL_DestroyTexture(digitTexture);
+
+            currentX += scaledWidth + digitSpacing;
+        }
+    }
+
     std::string scoreText = std::to_string(getScore());
-    int scoreW, scoreH;
-    TTF_SizeText(font, scoreText.c_str(), &scoreW, &scoreH);
-
-    SDL_Surface* scoreSurface = TTF_RenderText_Solid(font, scoreText.c_str(), color);
-    if(!scoreSurface) return;
-    SDL_Texture* scoreTexture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), scoreSurface);
-    SDL_FreeSurface(scoreSurface);
-
     int fixedHeight = 16;
-    float scaleScore = static_cast<float>(fixedHeight) / scoreH;
-    SDL_Rect scoreRect = {8, 8, static_cast<int>(scoreW * scaleScore), fixedHeight};
-    SDL_RenderCopy(windowManager.getRenderer(), scoreTexture, nullptr, &scoreRect);
-    SDL_DestroyTexture(scoreTexture);
+    int tileIndex = 3;
 
-    std::string levelText = "Level: " + std::to_string(currentLevel);
-    int levelW, levelH;
-    TTF_SizeText(font, levelText.c_str(), &levelW, &levelH);
+    for (char digit : scoreText) {
+        std::string digitStr(1, digit);
+        int digitW, digitH;
+        TTF_SizeText(font, digitStr.c_str(), &digitW, &digitH);
 
-    SDL_Surface* levelSurface = TTF_RenderText_Solid(font, levelText.c_str(), color);
-    SDL_Texture* levelTexture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), levelSurface);
-    SDL_FreeSurface(levelSurface);
+        SDL_Surface* digitSurface = TTF_RenderText_Solid(font, digitStr.c_str(), white);
+        if(!digitSurface) continue;
 
-    float scaleLevel = static_cast<float>(fixedHeight) / levelH;
-    int screenWidth = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE;
-    SDL_Rect levelRect = {
-            (screenWidth - static_cast<int>(levelW * scaleLevel)) / 2, // مرکز افقی
-            8, // همون y بالای صفحه
-            static_cast<int>(levelW * scaleLevel),
-            fixedHeight
-    };
-    SDL_RenderCopy(windowManager.getRenderer(), levelTexture, nullptr, &levelRect);
-    SDL_DestroyTexture(levelTexture);
-}
+        SDL_Texture* digitTexture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), digitSurface);
+        SDL_FreeSurface(digitSurface);
 
+        float scale = static_cast<float>(fixedHeight) / digitH;
+        int scaledWidth = static_cast<int>(digitW * scale);
+        int tileX = tileIndex * tileSize;
+        int centeredX = tileX + (tileSize - scaledWidth) / 2;
 
-
-void Game::run() {
-    const int FPS = 60;
-    const int frameDelay = 1000 / FPS;
-    const float fixedDelta = 1.0f / 60.0f;
-    float accumulator = 0;
-    Uint32 lastTime = SDL_GetTicks();
-
-    while(isRunning) {
-        Uint32 now = SDL_GetTicks();
-        float delta = (now - lastTime) / 1000.0f;
-        lastTime = now;
-        accumulator += delta;
-
-        handleEvents();
-
-        while (accumulator >= fixedDelta) {
-            update();
-            accumulator -= fixedDelta;
-        }
-
-        if(!isReady) {
-            if(SDL_GetTicks() - readyStartTime >= readyDuration) {
-                isReady = true;
-                blinky->readyToExit = true;
-                modeStartTime = SDL_GetTicks();
-                cycleStarted = true;
-                SoundManager::get().play("siren", -1);
-            }
-
-            renderGame();
-
-            SDL_Color color = {255, 255, 0, 255};
-            std::string text = "READY!";
-            SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
-            if(surface) {
-                SDL_Texture* texture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surface);
-                SDL_FreeSurface(surface);
-
-                int texW, texH;
-                SDL_QueryTexture(texture, nullptr, nullptr, &texW, &texH);
-                texW = 7 * 16;
-                int screenWidth = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE;
-                SDL_Rect dstRect = { (screenWidth - texW) / 2, 20 * GameRules::TILE_SIZE - 5, texW, 26 };
-
-                SDL_RenderCopy(windowManager.getRenderer(), texture, nullptr, &dstRect);
-                SDL_DestroyTexture(texture);
-            }
-
-
-            windowManager.present();
-        }
-        else {
-            renderGame();
-            windowManager.present();
-        }
-
+        SDL_Rect digitRect = {centeredX, 16, scaledWidth, fixedHeight};
+        SDL_RenderCopy(windowManager.getRenderer(), digitTexture, nullptr, &digitRect);
+        SDL_DestroyTexture(digitTexture);
+        tileIndex++;
     }
 }
 void Game::updateCruiseElroy() {
@@ -638,7 +647,6 @@ void Game::updateCruiseElroy() {
     }
 }
 
-
 void Game::renderGame() {
     windowManager.clear();
 
@@ -649,9 +657,11 @@ void Game::renderGame() {
 
     gameMap->render();
     pacman->render(windowManager.getRenderer());
+
     if(GameRules::SHOW_DEBUG){
         renderDebug();
     }
+
     blinky->render(windowManager.getRenderer());
     pinky->render(windowManager.getRenderer());
     inky->render(windowManager.getRenderer());
@@ -660,6 +670,10 @@ void Game::renderGame() {
     fruitManager.renderHUD(windowManager.getRenderer());
     renderLives();
     renderScore();
+
+    if(currentState == GameState::PLAYING && isReady) {
+        renderPauseButton();
+    }
 }
 
 
@@ -674,17 +688,18 @@ void Game::updateScore(){
         lastExtraLifeScore = newScore;
         SoundManager::get().playOnce("extra_life");
     }
-
+    if (newScore > highScore) {
+        highScore = newScore;
+    }
     setScore(newScore);
 }
-
 void Game::updatePacman(){
     if (!pacman->isAlive) {
         handlePacmanDeath();
         return;
     }
 
-    if (isReady) {
+    if (isReady && !isGhostScoreShowing) {
         pacman->update();
         pacman->move(gameMap, GameRules::PACMAN_SPEED);
     }
@@ -710,6 +725,8 @@ void Game::updatePacman(){
 }
 
 void Game::updateGhosts(){
+    if (!isReady) return;
+
     Uint32 now = SDL_GetTicks();
     bool shouldPlaySiren = false;
     if (isReady && frightenedUntil == 0) {
@@ -763,10 +780,26 @@ void Game::updateGhosts(){
     }
 
 }
-
-
 void Game::updateFrightened(){
     Uint32 now = SDL_GetTicks();
+
+    if(isGhostScoreShowing) {
+        for (auto g : ghosts) {
+            if(g->isShowingScore()) {
+                g->updateScoreDisplay();
+            }
+        }
+
+        if(now - ghostScoreFreezeStart >= GHOST_SCORE_FREEZE_DURATION) {
+            isGhostScoreShowing = false;
+            pacman->isFrozenForGhostScore = false;
+            for(auto g : ghosts) {
+                g->isFrozenForScore = false;
+            }
+        }
+        return;
+    }
+
     if (isReady) {
         for (auto g : ghosts) {
             if (g->checkCollisionWithPacman(pacman)) {
@@ -783,12 +816,24 @@ void Game::updateFrightened(){
                     ghostsEatenInThisFrightened++;
                     ghostScore += scoreValue;
                     SoundManager::get().playOnce("eaten");
+
+                    isGhostScoreShowing = true;
+                    ghostScoreFreezeStart = now;
+
+                    pacman->isFrozenForGhostScore = true;
+                    for(auto ghost : ghosts) {
+                        ghost->isFrozenForScore = true;
+                    }
                 }
             }
         }
-        for (auto g : ghosts) {
-            g->updateScoreDisplay();
+
+        if(!isGhostScoreShowing) {
+            for (auto g : ghosts) {
+                g->updateScoreDisplay();
+            }
         }
+
         if (frightenedUntil != 0) {
             Uint32 remaining = frightenedUntil - now;
 
@@ -811,6 +856,7 @@ void Game::updateFrightened(){
                 }
             }
         }
+
         bool anyGhostReturning = false;
         for (auto g : ghosts) {
             if (g->canGotoGhostHouse && g->getState() == EATEN) {
@@ -832,9 +878,12 @@ void Game::updateFrightened(){
             }
         }
     }
-
 }
 void Game::update() {
+    if (isPlayingDeathAnimation) {
+        return;
+    }
+
     fruitManager.update(pacman->getDotsEaten() % 240, pacman->getHitbox(), fruitsScore);
 
     if(pacman->getDotsEaten() >= 240 * currentLevel && !levelComplete) {
@@ -854,18 +903,420 @@ void Game::update() {
     updateFrightened();
 }
 
-void Game::quit() {
-    isRunning = false;
+
+void Game::renderMenu() {
+    windowManager.clear();
+
+    if(backgroundTexture) {
+        SDL_Rect dst = {0, 0, 448, 576};
+        SDL_RenderCopy(windowManager.getRenderer(), backgroundTexture, nullptr, &dst);
+    }
+
+    SDL_Color titleColor = {255, 255, 0, 255};
+    SDL_Color normalColor = {255, 255, 255, 255};
+    SDL_Color selectedColor = {255, 255, 0, 255};
+
+    std::string titleText = "PAC-MAN";
+    SDL_Surface* titleSurface = TTF_RenderText_Solid(font, titleText.c_str(), titleColor);
+    if(titleSurface) {
+        SDL_Texture* titleTexture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), titleSurface);
+        int texW, texH;
+        SDL_QueryTexture(titleTexture, nullptr, nullptr, &texW, &texH);
+        int screenWidth = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE;
+        SDL_Rect titleRect = {(screenWidth - texW) / 2, 150, texW, texH};
+        SDL_RenderCopy(windowManager.getRenderer(), titleTexture, nullptr, &titleRect);
+        SDL_FreeSurface(titleSurface);
+        SDL_DestroyTexture(titleTexture);
+    }
+
+    SDL_Color startColor = (selectedMenuItem == 0) ? selectedColor : normalColor;
+    std::string startText = "START GAME";
+    SDL_Surface* startSurface = TTF_RenderText_Solid(font, startText.c_str(), startColor);
+    if(startSurface) {
+        SDL_Texture* startTexture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), startSurface);
+        int texW, texH;
+        SDL_QueryTexture(startTexture, nullptr, nullptr, &texW, &texH);
+        int screenWidth = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE;
+        SDL_Rect startRect = {(screenWidth - texW) / 2, 300, texW, texH};
+        SDL_RenderCopy(windowManager.getRenderer(), startTexture, nullptr, &startRect);
+        SDL_FreeSurface(startSurface);
+        SDL_DestroyTexture(startTexture);
+    }
+
+    SDL_Color exitColor = (selectedMenuItem == 1) ? selectedColor : normalColor;
+    std::string exitText = "EXIT";
+    SDL_Surface* exitSurface = TTF_RenderText_Solid(font, exitText.c_str(), exitColor);
+    if(exitSurface) {
+        SDL_Texture* exitTexture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), exitSurface);
+        int texW, texH;
+        SDL_QueryTexture(exitTexture, nullptr, nullptr, &texW, &texH);
+        int screenWidth = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE;
+        SDL_Rect exitRect = {(screenWidth - texW) / 2, 360, texW, texH};
+        SDL_RenderCopy(windowManager.getRenderer(), exitTexture, nullptr, &exitRect);
+        SDL_FreeSurface(exitSurface);
+        SDL_DestroyTexture(exitTexture);
+    }
+
+    windowManager.present();
+}
+void Game::handleMenuInput(SDL_Event& event) {
+    if(event.type == SDL_KEYDOWN) {
+        switch(event.key.keysym.sym) {
+            case SDLK_UP:
+            case SDLK_w:
+                selectedMenuItem = 0;
+                break;
+            case SDLK_DOWN:
+            case SDLK_s:
+                selectedMenuItem = 1;
+                break;
+            case SDLK_RETURN:
+            case SDLK_SPACE:
+                if(selectedMenuItem == 0) {
+                    startGame();
+                } else {
+                    quit();
+                }
+                break;
+        }
+    }
+}
+void Game::startGame() {
+    currentState = GameState::PLAYING;
+    fruitManager.eatenFruits.clear();
+    isReady = false;
+    readyStartTime = SDL_GetTicks();
+    modeStartTime = SDL_GetTicks();
+    SoundManager::get().playOnce("beginning");
 }
 
-void Game::handleEvents() {
-    SDL_Event event;
-    while(SDL_PollEvent(&event)) {
-        if(event.type == SDL_QUIT) {
-            quit();
-        }
-        pacman->handleInput(event);
+void Game::pauseGame() {
+    if(currentState == GameState::PLAYING) {
+        currentState = GameState::PAUSED;
+        SoundManager::get().stop("siren");
+        SoundManager::get().stop("siren1");
+        SoundManager::get().stop("siren2");
+        SoundManager::get().stop("frightened");
+        SoundManager::get().stop("returningToHouse");
+    }
+}
+void Game::resumeGame() {
+    if(currentState == GameState::PAUSED) {
+        currentState = GameState::PLAYING;
     }
 }
 
+void Game::gameOver() {
+    currentState = GameState::GAME_OVER;
+    SoundManager::get().stop("siren");
+    SoundManager::get().stop("siren1");
+    SoundManager::get().stop("siren2");
+    SoundManager::get().stop("frightened");
+    SoundManager::get().stop("returningToHouse");
+}
 
+void Game::run() {
+    const int FPS = 60;
+    const int frameDelay = 1000 / FPS;
+    const float fixedDelta = 1.0f / 60.0f;
+    float accumulator = 0;
+    Uint32 lastTime = SDL_GetTicks();
+
+    while(isRunning) {
+        Uint32 now = SDL_GetTicks();
+        float delta = (now - lastTime) / 1000.0f;
+        lastTime = now;
+
+        if (currentState == GameState::PLAYING && isReady) {
+            accumulator += delta;
+        }
+
+        handleEvents();
+
+        if(currentState == GameState::MENU) {
+            renderMenu();
+            SDL_Delay(frameDelay);
+            continue;
+        }
+
+        if(currentState == GameState::PAUSED) {
+            renderGame();
+
+            SDL_Color color = {255, 255, 0, 255};
+            renderPauseMenu();
+            windowManager.present();
+            SDL_Delay(frameDelay);
+            continue;
+        }
+
+        if(currentState == GameState::GAME_OVER) {
+            renderGame();
+
+            SDL_Color color = {255, 0, 0, 255};
+            std::string text = "GAME OVER";
+            SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
+            if(surface) {
+                SDL_Texture* texture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surface);
+                SDL_FreeSurface(surface);
+                int texW, texH;
+                SDL_QueryTexture(texture, nullptr, nullptr, &texW, &texH);
+                int screenWidth = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE;
+                SDL_Rect dstRect = {(screenWidth - texW) / 2, 280, texW, texH};
+                SDL_RenderCopy(windowManager.getRenderer(), texture, nullptr, &dstRect);
+                SDL_DestroyTexture(texture);
+            }
+
+            windowManager.present();
+            SDL_Delay(frameDelay);
+            continue;
+        }
+
+        if (currentState == GameState::PLAYING && isReady) {
+            while (accumulator >= fixedDelta) {
+                update();
+                accumulator -= fixedDelta;
+            }
+        }
+        if(!isReady) {
+            if(SDL_GetTicks() - readyStartTime >= readyDuration) {
+                isReady = true;
+                blinky->readyToExit = true;
+                modeStartTime = SDL_GetTicks();
+                cycleStarted = true;
+                SoundManager::get().play("siren", -1);
+            }
+
+            renderGame();
+
+            SDL_Color color = {255, 255, 0, 255};
+            std::string text = "READY!";
+            SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), color);
+            if(surface) {
+                SDL_Texture* texture = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surface);
+                SDL_FreeSurface(surface);
+                int texW, texH;
+                SDL_QueryTexture(texture, nullptr, nullptr, &texW, &texH);
+                texW = 7 * 16;
+                int screenWidth = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE;
+                SDL_Rect dstRect = { (screenWidth - texW) / 2, 20 * GameRules::TILE_SIZE - 5, texW, 26 };
+                SDL_RenderCopy(windowManager.getRenderer(), texture, nullptr, &dstRect);
+                SDL_DestroyTexture(texture);
+            }
+
+            windowManager.present();
+        }
+        else {
+            renderGame();
+            windowManager.present();
+        }
+    }
+}
+void Game::handleEvents() {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            quit();
+            return;
+        }
+
+        // موس برای دکمه Pause
+        if (event.type == SDL_MOUSEMOTION && currentState == GameState::PLAYING) {
+            int mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
+            isPauseButtonHovered = isMouseOverPauseButton(mouseX, mouseY);
+        }
+
+        if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            if (currentState == GameState::PLAYING && isReady) {
+                int mouseX = event.button.x;
+                int mouseY = event.button.y;
+                if (isMouseOverPauseButton(mouseX, mouseY)) {
+                    pauseGame();
+                    continue; // مهم: دیگه نره پایین
+                }
+            }
+        }
+
+        // کیبورد: فقط یک بار پردازش بشه
+        if (event.type == SDL_KEYDOWN && !event.key.repeat) { // repeat رو نادیده بگیر
+
+            // Pause / Resume با Space, P یا ESC
+            if (event.key.keysym.sym == SDLK_SPACE ||
+                event.key.keysym.sym == SDLK_p ||
+                event.key.keysym.sym == SDLK_ESCAPE) {
+
+                if (currentState == GameState::PLAYING && isReady) {
+                    pauseGame();
+                    continue;
+                }
+                else if (currentState == GameState::PAUSED) {
+                    resumeGame();
+                    continue;
+                }
+            }
+
+            // فقط وقتی در حال بازی هستیم، ورودی پک‌من رو بگیر
+            if (currentState == GameState::PLAYING) {
+                pacman->handleInput(event);
+                continue;
+            }
+
+            // منوی Pause
+            if (currentState == GameState::PAUSED) {
+                switch (event.key.keysym.sym) {
+                    case SDLK_UP:
+                    case SDLK_w:
+                        selectedPauseItem = 0;
+                        break;
+                    case SDLK_DOWN:
+                    case SDLK_s:
+                        selectedPauseItem = 1;
+                        break;
+                    case SDLK_RETURN:
+                    case SDLK_SPACE:
+                        if (selectedPauseItem == 0) {
+                            resumeGame();
+                        } else {
+                            currentState = GameState::MENU;
+                            selectedMenuItem = 0;
+                            resetGame();
+                        }
+                        break;
+                }
+                continue;
+            }
+
+            // منوی اصلی
+            if (currentState == GameState::MENU) {
+                handleMenuInput(event);
+                continue;
+            }
+
+            // Game Over
+            if (currentState == GameState::GAME_OVER) {
+                currentState = GameState::MENU;
+                selectedMenuItem = 0;
+                continue;
+            }
+        }
+    }
+}
+void Game::quit() {
+    if (lives <= 0 && currentState == GameState::PLAYING) {
+        gameOver();  // فقط وقتی واقعاً باختی
+    }
+    isRunning = false;
+}
+
+void Game::renderPauseButton() {
+    if (!pauseButtonTexture) return;
+
+    pauseButtonRect = {448 - 64, 8, 32, 32};
+
+    SDL_Texture* texToRender = isPauseButtonHovered ? pauseButtonHoverTexture : pauseButtonTexture;
+
+    SDL_RenderCopy(windowManager.getRenderer(), texToRender, nullptr, &pauseButtonRect);
+
+    if (isPauseButtonHovered) {
+        SDL_SetRenderDrawColor(windowManager.getRenderer(), 255, 255, 0, 255);
+        SDL_RenderDrawRect(windowManager.getRenderer(), &pauseButtonRect);
+        SDL_Rect thick = {pauseButtonRect.x - 1, pauseButtonRect.y - 1,
+                          pauseButtonRect.w + 2, pauseButtonRect.h + 2};
+        SDL_RenderDrawRect(windowManager.getRenderer(), &thick);
+    }
+}
+
+bool Game::isMouseOverPauseButton(int x, int y) {
+    return (x >= pauseButtonRect.x && x <= pauseButtonRect.x + pauseButtonRect.w &&
+            y >= pauseButtonRect.y && y <= pauseButtonRect.y + pauseButtonRect.h);
+}
+
+void Game::renderPauseMenu() {
+    int screenWidth = GameRules::MAP_WIDTH_TILES * GameRules::TILE_SIZE;
+
+    SDL_SetRenderDrawBlendMode(windowManager.getRenderer(), SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(windowManager.getRenderer(), 0, 0, 0, 160);
+    SDL_Rect overlay = {0, 0, 448, 576};
+    SDL_RenderFillRect(windowManager.getRenderer(), &overlay);
+    SDL_SetRenderDrawBlendMode(windowManager.getRenderer(), SDL_BLENDMODE_NONE);
+
+    if(font) {
+        SDL_Color yellow = {255, 255, 0, 255};
+        SDL_Surface* surf = TTF_RenderText_Solid(font, "PAUSED", yellow);
+        if(surf) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surf);
+            int w, h; SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
+            SDL_Rect r = {(screenWidth - w)/2, 180, w, h};
+            SDL_RenderCopy(windowManager.getRenderer(), tex, nullptr, &r);
+            SDL_DestroyTexture(tex); SDL_FreeSurface(surf);
+        }
+    }
+
+    SDL_Color normal = {255, 255, 255, 255};
+    SDL_Color selected = {255, 255, 0, 255};
+
+    SDL_Color resumeColor = (selectedPauseItem == 0) ? selected : normal;
+    if(font) {
+        SDL_Surface* surf = TTF_RenderText_Solid(font, "RESUME", resumeColor);
+        if(surf) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surf);
+            int w, h; SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
+            SDL_Rect r = {(screenWidth - w)/2, 280, w, h};
+            SDL_RenderCopy(windowManager.getRenderer(), tex, nullptr, &r);
+            SDL_DestroyTexture(tex); SDL_FreeSurface(surf);
+        }
+    }
+
+    // MAIN MENU
+    SDL_Color menuColor = (selectedPauseItem == 1) ? selected : normal;
+    if(font) {
+        SDL_Surface* surf = TTF_RenderText_Solid(font, "MAIN MENU", menuColor);
+        if(surf) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(windowManager.getRenderer(), surf);
+            int w, h; SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
+            SDL_Rect r = {(screenWidth - w)/2, 340, w, h};
+            SDL_RenderCopy(windowManager.getRenderer(), tex, nullptr, &r);
+            SDL_DestroyTexture(tex); SDL_FreeSurface(surf);
+        }
+    }
+}
+void Game::resetGame() {
+    currentLevel = 1;
+    lives = 3;
+    score = 0;
+    ghostScore = 0;
+    fruitsScore = 0;
+    eloryIndex = 0;
+    currentSiren = "";
+    frightenedUntil = 0;
+    ghostsEatenInThisFrightened = 0;
+    levelComplete = false;
+    isGhostScoreShowing = false;
+    ghostScoreFreezeStart = 0;
+
+    resetPacmanPosition();
+    gameMap->resetDots();
+    totalDots = gameMap->totalDots;
+    pacman->setDotsEaten(0);
+    pacman->setBigDotsEaten(0);
+
+    for (auto g : ghosts) {
+        g->reset();
+    }
+
+    fruitManager.reset(currentLevel);
+
+    isReady = false;
+    readyStartTime = SDL_GetTicks();
+    modeStartTime = SDL_GetTicks();
+    cycleStarted = true;
+    cycleIndex = 0;
+    currentMode = SCATTER;
+
+    blinky->readyToExit = false;
+    pinky->readyToExit = false;
+    inky->readyToExit = false;
+    clyde->readyToExit = false;
+
+    SoundManager::get().playOnce("beginning");
+}

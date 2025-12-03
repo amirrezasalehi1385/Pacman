@@ -19,8 +19,11 @@ bool Pacman::loadTextures(TextureManager* texManager,
     frames[2] = texManager->loadTexture(openPath);
     return frames[0] && frames[1] && frames[2];
 }
-
 void Pacman::update() {
+    if(isFrozenForGhostScore) {
+        return;
+    }
+
     Uint32 currentTime = SDL_GetTicks();
     if (currentTime - lastTime >= 30) {
         frameIndex += frameDir;
@@ -43,7 +46,7 @@ double Pacman::getAngle() const {
 }
 
 void Pacman::render(SDL_Renderer* renderer) {
-    if(!visible) return;
+    if(!visible || isFrozenForGhostScore) return;
     SDL_Texture* tex = frames[frameIndex];
     double angle = getAngle();
     if(tex) SDL_RenderCopyEx(renderer, tex, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);

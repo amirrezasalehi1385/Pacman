@@ -107,6 +107,8 @@ bool Ghost::ghostInGhostHouse() {
 }
 
 bool Ghost::checkCollisionWithPacman(Pacman* pacman) {
+    if(showingScore) return false;
+
     SDL_Rect pacHitbox = pacman->getHitbox();
     if(SDL_HasIntersection(&hitbox, &pacHitbox)) {
         if(state == FRIGHTENED) {
@@ -162,8 +164,8 @@ void Ghost::wait() {
 
 //---------------- Update ----------------
 
-void Ghost::update(int level,const Map& map) {
-    if(frozen) return;
+void Ghost::update(int level, const Map& map) {
+    if(frozen || isFrozenForScore) return;
 
     switch(state) {
         case WAIT:
@@ -202,7 +204,6 @@ void Ghost::update(int level,const Map& map) {
     }
     updateBodyAnimation();
 }
-
 //---------------- Movement ----------------
 bool flag = true;
 
@@ -433,7 +434,13 @@ void Ghost::updateFrightened(const Map& map) {
 //---------------- Render ----------------
 void Ghost::render(SDL_Renderer* renderer) {
     if(!visible) return;
-    if(showingScore) { renderScore(renderer); return; }
+
+    if(showingScore) {
+        if(!Map::isInGhostHouse(currentTile.x, currentTile.y)) {
+            renderScore(renderer);
+        }
+        return;
+    }
 
     SDL_Texture* texToRender = (bodyFrame==0)? bodyTex1: bodyTex2;
     SDL_Texture* frightenedToRender = (bodyFrame==0)? frightenedTex: frightenedTex2;
@@ -452,7 +459,6 @@ void Ghost::render(SDL_Renderer* renderer) {
         if(currentEye) SDL_RenderCopy(renderer, currentEye, nullptr, &rect);
     }
 }
-
 //---------------- Load Textures ----------------
 bool Ghost::loadTextures(TextureManager* texManager, const std::vector<std::string>& paths) {
     if(paths.size() < 10) return false;

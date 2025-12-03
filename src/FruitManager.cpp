@@ -27,7 +27,7 @@ void FruitManager::init(TextureManager* texManager, SDL_Renderer* renderer) {
 }
 
 bool FruitManager::loadTextures(TextureManager* texManager) {
-    const std::vector<std::string> paths = {
+    const std::vector<std::string> fruitPaths = {
             "assets/fruits/cherry.png",
             "assets/fruits/strawberry.png",
             "assets/fruits/orange.png",
@@ -38,31 +38,44 @@ bool FruitManager::loadTextures(TextureManager* texManager) {
             "assets/fruits/key.png"
     };
 
+    const std::vector<std::string> scorePaths = {
+            "assets/scores/100.png",
+            "assets/scores/300.png",
+            "assets/scores/500.png",
+            "assets/scores/700.png",
+            "assets/scores/1000.png",
+            "assets/scores/2000.png",
+            "assets/scores/3000.png",
+            "assets/scores/5000.png"
+    };
+
     const std::vector<int> scores = {100, 300, 500, 700, 1000, 2000, 3000, 5000};
 
     fruitTextures.clear();
-    fruitScores.clear();
+    scoreTextures.clear();
+    fruitScores = scores;
 
-    for (size_t i = 0; i < paths.size(); ++i) {
-        SDL_Texture* tex = texManager->loadTexture(paths[i]);
-        if (!tex) {
-            printf("[FruitManager] ERROR: Failed to load %s\n", paths[i].c_str());
-            return false;
-        }
+    for (size_t i = 0; i < fruitPaths.size(); i++) {
+        SDL_Texture* tex = texManager->loadTexture(fruitPaths[i]);
+        if (!tex) return false;
         fruitTextures.push_back(tex);
-        fruitScores.push_back(scores[i]);
-        printf("[FruitManager] Loaded %s (score=%d)\n", paths[i].c_str(), scores[i]);
+    }
+
+    for (size_t i = 0; i < scorePaths.size(); i++) {
+        SDL_Texture* tex = texManager->loadTexture(scorePaths[i]);
+        if (!tex) return false;
+        scoreTextures.push_back(tex);
     }
 
     return true;
 }
+
 
 void FruitManager::reset(int level) {
     visible = false;
     spawned1 = false;
     spawned2 = false;
     spawnTime = 0;
-
     rect = { 13 * 16, 19 * 16 + 8, 32, 32 };
 
     selectFruitByLevel(level);
@@ -91,37 +104,63 @@ void FruitManager::selectFruitByLevel(int level) {
     }
 }
 
+void FruitManager::renderScore(SDL_Renderer* renderer) {
+    if (!showScorePopup || scorePopupIndex < 0) return;
+
+    Uint32 now = SDL_GetTicks();
+    const Uint32 duration = 1000;
+
+    if (now - scorePopupStart <= duration) {
+        SDL_RenderCopy(renderer, scoreTextures[scorePopupIndex], nullptr, &scorePopupRect);
+    } else {
+        showScorePopup = false;
+    }
+}
 
 
 void FruitManager::update(int dotsEaten, const SDL_Rect& pacHitbox, int& score) {
-    Uint32 now = SDL_GetTicks();
+    if(isPaused && visible) {
+        spawnTime = SDL_GetTicks();
+        isPaused = false;
+    }
 
-    if (!spawned1 && dotsEaten >= spawn1) {
-        visible = true;
+    if(showScorePopup) {
+        if(SDL_GetTicks() - scorePopupStart >= 2000) {
+            showScorePopup = false;
+        }
+        return;
+    }
+
+    if(dotsEaten >= spawn1 && !spawned1) {
         spawned1 = true;
-        spawnTime = now;
-    }
-
-    if (!spawned2 && dotsEaten >= spawn2) {
         visible = true;
-        spawned2 = true;
-        spawnTime = now;
+        spawnTime = SDL_GetTicks();
     }
 
-    if (visible && currentFruitIndex >= 0) {
-        if (now - spawnTime > duration) {
+    if(dotsEaten >= spawn2 && !spawned2) {
+        spawned2 = true;
+        visible = true;
+        spawnTime = SDL_GetTicks();
+    }
+
+    if(visible) {
+        Uint32 elapsed = SDL_GetTicks() - spawnTime;
+        Uint32 effectiveDuration = isPaused ? pausedTimeRemaining : duration;
+
+        if(elapsed >= effectiveDuration) {
             visible = false;
-        }
-        if (SDL_HasIntersection(&rect, &pacHitbox)) {
-            SoundManager::get().playOnce("fruit");
-            score += scoreValue;
-            visible = false;
-            eatenFruits.push_back(currentFruitIndex);
-            while (eatenFruits.size() > 7) {
-                eatenFruits.erase(eatenFruits.begin());
-            }
         }
 
+        if(SDL_HasIntersection(&rect, &pacHitbox)) {
+            visible = false;
+            score += scoreValue;
+            eatenFruits.push_back(currentFruitIndex);
+
+            showScorePopup = true;
+            scorePopupStart = SDL_GetTicks();
+            scorePopupRect = rect;
+            scorePopupIndex = currentFruitIndex;
+        }
     }
 }
 
@@ -143,11 +182,22 @@ void FruitManager::renderHUD(SDL_Renderer* renderer) {
         }
     }
 }
-
+void FruitManager::pauseFruit() {
+    if(visible && spawnTime > 0) {
+        Uint32 now = SDL_GetTicks();
+        Uint32 elapsed = now - spawnTime;
+        if(elapsed < duration) {
+            pausedTimeRemaining = duration - elapsed;
+            isPaused = true;
+        }
+    }
+}
 
 
 void FruitManager::render(SDL_Renderer* renderer) {
     if (visible && currentFruitIndex >= 0 && currentFruitIndex < fruitTextures.size()) {
         SDL_RenderCopy(renderer, fruitTextures[currentFruitIndex], nullptr, &rect);
     }
+    renderScore(renderer);
+
 }

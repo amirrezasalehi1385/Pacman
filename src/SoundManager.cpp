@@ -1,5 +1,6 @@
 #include "SoundManager.h"
 #include <SDL2/SDL.h>
+#include "GameRules.h"
 
 SoundManager::SoundManager() {
     Mix_AllocateChannels(16);
@@ -27,27 +28,31 @@ bool SoundManager::loadSound(const std::string& id, const std::string& path, int
 }
 
 void SoundManager::playOnce(const std::string& id) {
-    auto it = sounds.find(id);
-    if (it == sounds.end()) return;
-    Uint32 now = SDL_GetTicks();
-    if (now - lastPlayTime[id] < cooldown) return;
-    int channel = dedicatedChannels[id];
-    Mix_PlayChannel(channel, it->second, 0);
-    lastPlayTime[id] = now;
+    if(GameRules::PLAY_SOUND) {
+        auto it = sounds.find(id);
+        if (it == sounds.end()) return;
+        Uint32 now = SDL_GetTicks();
+        if (now - lastPlayTime[id] < cooldown) return;
+        int channel = dedicatedChannels[id];
+        Mix_PlayChannel(channel, it->second, 0);
+        lastPlayTime[id] = now;
+    }
 }
 
 void SoundManager::play(const std::string& id, int loops) {
-    auto it = sounds.find(id);
-    if (it == sounds.end()) return;
+    if(GameRules::PLAY_SOUND){
+        auto it = sounds.find(id);
+        if (it == sounds.end()) return;
 
-    Uint32 now = SDL_GetTicks();
+        Uint32 now = SDL_GetTicks();
 
-    int channel = dedicatedChannels[id];
+        int channel = dedicatedChannels[id];
 
-    if (isPlaying(id)) return;
+        if (isPlaying(id)) return;
 
-    Mix_PlayChannel(channel, it->second, loops);
-    lastPlayTime[id] = now;
+        Mix_PlayChannel(channel, it->second, loops);
+        lastPlayTime[id] = now;
+    }
 }
 
 void SoundManager::stop(const std::string& id) {

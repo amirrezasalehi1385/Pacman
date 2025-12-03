@@ -71,6 +71,7 @@ public:
     Uint32 scoreDisplayStartTime;
     int scoreDisplayDuration;
     int currentScoreValue;
+    bool isFrozenForScore = false;
     int scoreValue = 200;
 protected:
     int w, h;
@@ -86,6 +87,9 @@ private:
     SDL_Texture* scoreTexture800;
     SDL_Texture* scoreTexture1600;
     const SDL_Rect ghostHouse = {11, 16, 8, 5};
+    bool isGhostScoreShowing = false;
+    Uint32 ghostScoreFreezeStart = 0;
+    const Uint32 GHOST_SCORE_FREEZE_DURATION = 500;
     SDL_Rect eyeRect;
     SDL_Texture* eyeTex;
     SDL_Rect hitbox;

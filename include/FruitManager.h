@@ -10,6 +10,7 @@ class TextureManager;
 class FruitManager {
 private:
     std::vector<SDL_Texture*> fruitTextures;
+    std::vector<SDL_Texture*> scoreTextures;
     std::vector<int> fruitScores;
     SDL_Rect rect;
 
@@ -27,9 +28,17 @@ private:
     const int spawn2 = 170;      // Number of dots eaten after which the second fruit appears
     const Uint32 duration = 9500; // Duration (in milliseconds) that the fruit remains visible
     int currentFruitIndex = -1;   // Index of the currently spawned fruit, -1 if none
+    bool showScorePopup = false;
+    Uint32 scorePopupStart = 0;
+    SDL_Rect scorePopupRect;
+    int scorePopupIndex = -1;   // index تصویر امتیاز (100, 300 ...)
+
 
 
 public:
+    void pauseFruit();
+    Uint32 pausedTimeRemaining = 0;
+    bool isPaused = false;
     std::vector<int> eatenFruits;
     FruitManager();
     ~FruitManager();
@@ -46,6 +55,9 @@ public:
     bool isVisible() const { return visible; }
     void selectFruitByLevel(int level);
 private:
+    void renderScore();
+
+    void renderScore(SDL_Renderer *renderer);
 };
 
 #endif

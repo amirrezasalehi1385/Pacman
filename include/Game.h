@@ -28,7 +28,6 @@ public:
     const Uint32 readyDuration = 4267;
 
     TTF_Font* font = nullptr;
-    int lives = 3;
     std::vector<SDL_Texture*> livesTextures;
     std::vector<SDL_Texture*> pacmanDeathTextures;
 
@@ -53,10 +52,8 @@ public:
     void startNextLevel();
     void updateGhostSpeedForLevel();
     void updateFrightenedTimeForLevel();
-    void renderMenu();
+    bool isPlayingDeathAnimation = false;
     void handleMenuInput();
-
-    GameState currentState = GameState::MENU;
     int selectedIndex = 0;
     void updateCruiseElroy();
     std::vector<std::string> options = { "Start", "Exit" };
@@ -64,21 +61,50 @@ public:
     void handleEvent(SDL_Event& event);
     void updateSirenSound();
 
-    int fruitsScore = 0;
 
 private:
-    FruitManager fruitManager;
+    SDL_Texture* pauseButtonTexture = nullptr;
+    SDL_Texture* pauseButtonHoverTexture = nullptr; // اختیاری: نسخه زرد برای hover
 
+    int selectedPauseItem = 0;        // 0 = Resume, 1 = Main Menu
+    SDL_Rect resumeButtonRect{0, 0, 0, 0};
+    SDL_Rect mainMenuButtonRect{0, 0, 0, 0};
+    bool isResumeHovered = false;
+    bool isMainMenuHovered = false;
+
+    GameState currentState = GameState::MENU;
+    int selectedMenuItem = 0;
+
+    void renderMenu();
+    void handleMenuInput(SDL_Event& event);
+    void startGame();
+    void pauseGame();
+    void resumeGame();
+    void gameOver();
+
+
+    SDL_Rect pauseButtonRect;
+    bool isPauseButtonHovered = false;
+
+    void renderPauseButton();
+    bool isMouseOverPauseButton(int x, int y);
+
+
+    int score = 0;
+    int highScore = 0;
+    int ghostScore = 0;
+    int fruitsScore = 0;
+    int lives = 3;
+    int currentLevel = 1;
+
+    FruitManager fruitManager;
     int eloryIndex = 0;
     std::string currentSiren = "";
-    int currentLevel = 1;
     bool bigDotVisible = true;
     Uint32 lastBlinkTime = 0;
     const Uint32 BLINK_INTERVAL = 500;
     bool levelComplete = false;
     int totalDots = 0;
-    int score;
-    int ghostScore = 0;
     Direction currentDir = STOP;
     std::array<Uint32, 7> cycleTimes = GameRules::GHOST_CYCLES;
     Uint32 frightenedTime = GameRules::getFrightenedTime(currentLevel);
@@ -101,4 +127,13 @@ private:
     Map* gameMap;
     Pacman* pacman;
     Direction nextDir = STOP;
+
+    void renderPauseMenu();
+
+    void resetGame();
+
+    bool isGhostScoreShowing = false;
+    Uint32 ghostScoreFreezeStart = 0;
+    const Uint32 GHOST_SCORE_FREEZE_DURATION = 500;
+
 };

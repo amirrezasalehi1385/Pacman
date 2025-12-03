@@ -44,6 +44,8 @@ public:
     SDL_Rect rect{};
     bool isAlive = true;
     bool visible = true;
+    bool isFrozenForGhostScore = false;
+
 private:
     Direction currentDir = STOP;
     Direction nextDir = STOP;
