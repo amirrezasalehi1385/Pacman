@@ -19,7 +19,17 @@ Each ghost has a unique targeting algorithm inspired by the original Pac-Man gam
 - **ESC**: Pause/Menu
 
 ---
+## 🚀 How to Run the Game
 
+This is a **release version**, so no building or installation is required.  
+To play:
+
+1. Download the ZIP file from the release.  
+2. Extract the contents of the ZIP.  
+3. Double-click `Pacman.exe` (Windows) to start the game.
+
+> ⚠️ Note: This release is built for **Windows** only.
+---
 ## Ghost Movement Algorithm
 
 Each ghost has a different targeting behavior based on Pac-Man's position and direction...
