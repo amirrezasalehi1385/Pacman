@@ -1,5 +1,6 @@
 #include "Ghost.h"
 #include "GameRules.h"
+#include <climits>
 #include <SDL2/SDL.h>
 #include <cmath>
 #include <vector>
