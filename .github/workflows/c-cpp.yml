@@ -9,16 +9,16 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest   
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y build-essential cmake libsdl2-dev
+      run: choco install sdl2
 
     - name: Build
-      run: cmake . && make
+      run: cmake . && cmake --build .
 
     - name: Run tests
-      run: make test || true
+      run: ctest || true
