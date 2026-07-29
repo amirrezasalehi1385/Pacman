@@ -344,5 +344,6 @@ The fruit system tracks:
 - `spawnTime`: Timestamp of last spawn (for duration tracking)
 - `currentFruitIndex`: Index of the current fruit type (0-7)
 - `eatenFruits`: History of collected fruits for HUD display
+adding some text to the project 
 
 **Reset behavior**: When a new level starts, all spawn flags are reset, but the fruit history persists across levels for the HUD.
